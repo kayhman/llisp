@@ -30,19 +30,19 @@ void Atom::print(const std::string& code)
 
 void Sexp::print(const std::string& code)
 {
+  std::cout << "[";
   for(int cId = 0 ; cId < cells.size() ; ++cId)
     {
       Cell* cl = this->cells[cId];
       Atom* at = dynamic_cast<Atom*>(cl);
       Sexp* sx = dynamic_cast<Sexp*>(cl);
       
-      std::cout << "[";
       if(at)
 	at->print(code);
       if(sx)
 	sx->print(code);
-      std::cout << "]";
     }
+  std::cout << "]";
 }
 
 void parse(const std::string& code)
@@ -87,10 +87,17 @@ void parse(const std::string& code)
 
 	  if(code[c] == ')')
 	    {
-	      sexp = sexps.back();
-	      sexps.pop_back();
+	      if(sexps.size() > 1)
+		{
+		  sexps.pop_back();
+		  sexp = sexps.back();
+		}
+	      else
+		{
+		  sexp = sexps.back();
+		  sexps.pop_back();
+		}
 	    }
-
 	}
       else if(isalnum(code[c]) && newToken)
 	{
@@ -98,8 +105,6 @@ void parse(const std::string& code)
 	  curTok.begin = c;
 	}
     }
-  std::cout << "#tokens " << sexp->cells.size() << std::endl;
-
   sexp->print(code);
 
 }
@@ -107,5 +112,8 @@ void parse(const std::string& code)
 int main(int argc, char* argv[])
 {
   parse("(lapin 2 (add 3 2))");
+  std::cout << std::endl;
+  parse("(defun lapin (a b) (add a b))");
+  std::cout << std::endl;
   return 0;
 }
