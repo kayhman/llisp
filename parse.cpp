@@ -2,6 +2,8 @@
 #include <list>
 #include <vector>
 #include <locale>
+#include <numeric>
+#include <algorithm>
 
 bool isoperator(char c) {
     std::string const valid_chars = "+*-/!=<>\"";
@@ -12,6 +14,8 @@ bool isoperator(char c) {
 struct Cell
 {
   virtual ~Cell() {};
+  mutable std::string val;
+  virtual void eval(const std::string& code) const = 0;
 };
 
 struct Sexp : public Cell
@@ -19,6 +23,7 @@ struct Sexp : public Cell
   std::vector<Cell*> cells;
 
   void print(const std::string& code) const;
+  virtual void eval(const std::string& code) const;
 };
 
 
@@ -29,6 +34,7 @@ struct Atom : public Cell
   int begin, end;
   void print(const std::string& code) const;
   void computeType(const std::string& code);
+  virtual void eval(const std::string& code) const;
 };
 
 void Atom::print(const std::string& code) const
@@ -49,12 +55,20 @@ void Atom::computeType(const std::string& code)
   if(this->begin > 0 && this->begin < code.size() &&
      this->end > 0 && this->end < code.size())
     {
+      this->val = code.substr(this->begin, this->end);
       this-> type = Atom::Symbol;
       if(isdigit(code[this->begin]) ||  isoperator(code[this->begin]))
 	this-> type = Atom::Real;
       if(code[this->begin] == '"' &&  code[this->end-1] == '"')
 	this-> type = Atom::String;
     }
+}
+void Atom::eval(const std::string& code) const
+{
+  if(this->type == Atom::String)
+    this->val = code.substr(this->begin+1, this->end-this->begin-2);
+  else
+    this->val = code.substr(this->begin, this->end-this->begin);
 }
 
 void Sexp::print(const std::string& code) const
@@ -74,7 +88,19 @@ void Sexp::print(const std::string& code) const
   std::cout << "]";
 }
 
-void parse(const std::string& code)
+void Sexp::eval(const std::string& code) const
+{
+  Cell* cl = this->cells[0];
+  cl->eval(code);
+
+  if(cl->val.compare("concat") == 0)
+    {
+      std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval(code);}); 
+      std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){this->val += cell->val;}); 
+    }
+}
+
+Sexp* parse(const std::string& code)
 {
   bool newToken = false;
   Atom curTok;
@@ -135,15 +161,30 @@ void parse(const std::string& code)
 	  curTok.begin = c;
 	}
     }
-  sexp->print(code);
-
+  
+  return sexp;
 }
 
 int main(int argc, char* argv[])
 {
-  parse("(lapin 2 (add -3 -2))");
+  std::string code = "(lapin 2 (add -3 -2))";
+  Sexp* sexp = parse(code);
+  sexp->print(code);
   std::cout << std::endl;
-  parse("(defun lapin (a b) (add a b \"c\"))");
+  
+  code = "(defun lapin (a b) (add a b \"c\"))";
+  sexp = parse(code);
+  sexp->print(code);
   std::cout << std::endl;
+  std::cout << std::endl;
+  std::cout << std::endl;
+
+
+  code = "(concat \"one\" \"two\")";
+  sexp = parse(code);
+  sexp->print(code);
+  std::cout << std::endl;
+  sexp->eval(code);
+  std::cout << "eval : " << sexp->val << std::endl;
   return 0;
 }
