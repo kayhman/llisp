@@ -100,7 +100,7 @@ void Sexp::eval(const std::string& code) const
       std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){this->val += cell->val;}); 
     }
 
-  if(cl->val.compare("add") == 0)
+  if(cl->val.compare("+") == 0)
     {
       std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval(code);});
       double res = 0;
@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
   std::cout << "eval : " << sexp->val << std::endl;
 
 
-  code = "(add 1 2 3.666)";
+  code = "(+ 1 2 3.666)";
   sexp = parse(code);
   sexp->print(code);
   std::cout << std::endl;
