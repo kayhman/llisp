@@ -15,14 +15,21 @@ struct Sexp : public Cell
   void print(const std::string& code);
 };
 
+
 struct Atom : public Cell
 {
+  enum Type {Symbol, Real};
+  Type type;
   int begin, end;
   void print(const std::string& code);
 };
 
 void Atom::print(const std::string& code)
 {
+  if(this->type == Atom::Symbol)
+    std::cout << "s'";
+  else
+    std::cout << "i'";
   for(int c = this->begin ; c < this->end ; ++c)
     std::cout << code[c];
   std::cout << " ";
@@ -43,6 +50,11 @@ void Sexp::print(const std::string& code)
 	sx->print(code);
     }
   std::cout << "]";
+}
+
+bool isoperator(char c) {
+    std::string const valid_chars = "+*-/!=<>";
+    return valid_chars.find(c) != std::string::npos;
 }
 
 void parse(const std::string& code)
@@ -76,7 +88,9 @@ void parse(const std::string& code)
 	    {
 	      newToken = true;
 	      curTok.end = c;
-	      
+	      curTok.type = isdigit(code[curTok.begin]) ||  isoperator(code[curTok.begin]) ? Atom::Real : Atom::Symbol;
+
+
 	      Atom* at = new Atom();
 	      *at = curTok;
 	      
@@ -99,7 +113,7 @@ void parse(const std::string& code)
 		}
 	    }
 	}
-      else if(isalnum(code[c]) && newToken)
+      else if((isalnum(code[c]) || isoperator(code[c])) && newToken)
 	{
 	  newToken = false;
 	  curTok.begin = c;
@@ -111,7 +125,7 @@ void parse(const std::string& code)
 
 int main(int argc, char* argv[])
 {
-  parse("(lapin 2 (add 3 2))");
+  parse("(lapin 2 (add -3 -2))");
   std::cout << std::endl;
   parse("(defun lapin (a b) (add a b))");
   std::cout << std::endl;
