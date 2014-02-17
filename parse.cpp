@@ -4,6 +4,7 @@
 #include <locale>
 #include <numeric>
 #include <algorithm>
+#include <sstream>
 
 bool isoperator(char c) {
     std::string const valid_chars = "+*-/!=<>\"";
@@ -98,6 +99,16 @@ void Sexp::eval(const std::string& code) const
       std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval(code);}); 
       std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){this->val += cell->val;}); 
     }
+
+  if(cl->val.compare("add") == 0)
+    {
+      std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval(code);});
+      double res = 0;
+      std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){res += atof(cell->val.c_str());});
+      std::ostringstream ss;
+      ss << res;
+      this->val = ss.str(); 
+    }
 }
 
 Sexp* parse(const std::string& code)
@@ -181,6 +192,14 @@ int main(int argc, char* argv[])
 
 
   code = "(concat \"one\" \"two\")";
+  sexp = parse(code);
+  sexp->print(code);
+  std::cout << std::endl;
+  sexp->eval(code);
+  std::cout << "eval : " << sexp->val << std::endl;
+
+
+  code = "(add 1 2 3.666)";
   sexp = parse(code);
   sexp->print(code);
   std::cout << std::endl;
