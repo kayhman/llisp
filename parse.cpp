@@ -3,6 +3,12 @@
 #include <vector>
 #include <locale>
 
+bool isoperator(char c) {
+    std::string const valid_chars = "+*-/!=<>\"";
+    return valid_chars.find(c) != std::string::npos;
+}
+
+
 struct Cell
 {
   virtual ~Cell() {};
@@ -12,30 +18,46 @@ struct Sexp : public Cell
 {
   std::vector<Cell*> cells;
 
-  void print(const std::string& code);
+  void print(const std::string& code) const;
 };
 
 
 struct Atom : public Cell
 {
-  enum Type {Symbol, Real};
+  enum Type {Symbol, Real, String};
   Type type;
   int begin, end;
-  void print(const std::string& code);
+  void print(const std::string& code) const;
+  void computeType(const std::string& code);
 };
 
-void Atom::print(const std::string& code)
+void Atom::print(const std::string& code) const
 {
-  if(this->type == Atom::Symbol)
-    std::cout << "s'";
-  else
+  if(this->type == Atom::Real)
     std::cout << "i'";
+  else if (this->type == Atom::String)
+    std::cout << "S'";
+  else
+    std::cout << "s'";
   for(int c = this->begin ; c < this->end ; ++c)
     std::cout << code[c];
   std::cout << " ";
 }
 
-void Sexp::print(const std::string& code)
+void Atom::computeType(const std::string& code)
+{
+  if(this->begin > 0 && this->begin < code.size() &&
+     this->end > 0 && this->end < code.size())
+    {
+      this-> type = Atom::Symbol;
+      if(isdigit(code[this->begin]) ||  isoperator(code[this->begin]))
+	this-> type = Atom::Real;
+      if(code[this->begin] == '"' &&  code[this->end-1] == '"')
+	this-> type = Atom::String;
+    }
+}
+
+void Sexp::print(const std::string& code) const
 {
   std::cout << "[";
   for(int cId = 0 ; cId < cells.size() ; ++cId)
@@ -50,11 +72,6 @@ void Sexp::print(const std::string& code)
 	sx->print(code);
     }
   std::cout << "]";
-}
-
-bool isoperator(char c) {
-    std::string const valid_chars = "+*-/!=<>";
-    return valid_chars.find(c) != std::string::npos;
 }
 
 void parse(const std::string& code)
@@ -88,8 +105,7 @@ void parse(const std::string& code)
 	    {
 	      newToken = true;
 	      curTok.end = c;
-	      curTok.type = isdigit(code[curTok.begin]) ||  isoperator(code[curTok.begin]) ? Atom::Real : Atom::Symbol;
-
+	      curTok.computeType(code);
 
 	      Atom* at = new Atom();
 	      *at = curTok;
@@ -127,7 +143,7 @@ int main(int argc, char* argv[])
 {
   parse("(lapin 2 (add -3 -2))");
   std::cout << std::endl;
-  parse("(defun lapin (a b) (add a b))");
+  parse("(defun lapin (a b) (add a b \"c\"))");
   std::cout << std::endl;
   return 0;
 }
