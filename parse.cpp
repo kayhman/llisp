@@ -40,8 +40,8 @@ struct Atom : public Cell
   Type type;
 
   void print() const;
-  void computeType(const std::string& code, int begin, int end);
-  void computeVal(const std::string& code, int begin, int end) const;
+  void computeType(const std::string& code);
+  void computeVal(const std::string& code) const;
   virtual void eval() const;
 };
 
@@ -57,26 +57,22 @@ void Atom::print() const
   std::cout << " ";
 }
 
-void Atom::computeType(const std::string& code, int begin, int end)
+void Atom::computeType(const std::string& code)
 {
-  if(begin > 0 && begin < code.size() &&
-     end > 0 && end < code.size())
-    {
-      this->val = code.substr(begin, end);
+  //this->val = code;
       this-> type = Atom::Symbol;
-      if(isdigit(code[begin]) ||  isoperator(code[begin]))
+      if(isdigit(code.front()) ||  isoperator(code.front()))
 	this-> type = Atom::Real;
-      if(code[begin] == '"' &&  code[end-1] == '"')
+      if(code.front() == '"' &&  code.back() == '"')
 	this-> type = Atom::String;
-    }
 }
 
-void Atom::computeVal(const std::string& code, int begin, int end) const
+void Atom::computeVal(const std::string& code) const
 {
   if(this->type == Atom::String)
-    this->val = code.substr(begin+1, end-begin-2);
+    this->val = code.substr(1, code.size()-2);
   else
-    this->val = code.substr(begin, end-begin);
+    this->val = code;
 }
 
 
@@ -127,8 +123,14 @@ void Sexp::eval() const
 
   if(cl->val.compare("define") == 0)
     {
+      Sexp* lambda = dynamic_cast<Sexp*>(cells[2]);
       std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
-      cells[2]->val = cells[1]->val;
+
+      std::cout << cells[2]->val << " <> " <<  cells[1]->val << std::endl;
+      if(lambda)
+	if(lambda->cells.size() > 0)
+	  if(lambda->cells[0]->val.compare("lambda") == 0)
+	  cells[2]->val = cells[1]->val;
       env[cells[1]->val] = cells[2];
     }
 
@@ -176,16 +178,18 @@ Sexp* parse(const std::string& code)
 
   std::vector<Sexp*> sexps;
   Sexp* sexp = NULL;
-  int begin = -1, end;
-
-  for(int c = 0 ; c < code.size() ; ++c)
+  
+  char ch;
+  std::string buffer;
+  for(int c = 0 ;  ; ++c)
     {
-      std::cout << code[c];
-      if(code[c] == '(' ||
-	 code[c] == ' ' ||
-	 code[c] == ')')
+      ch = code[c];
+
+      if(ch == '(' ||
+	 ch == ' ' ||
+	 ch == ')')
 	{
-	  if(code[c] == '(')
+	  if(ch == '(')
 	    {
 	      Sexp* sx = new Sexp();
 	      if(sexp)
@@ -194,24 +198,23 @@ Sexp* parse(const std::string& code)
 	      sexps.push_back(sx);
 	    }
 
-	  if(begin == -1)
-	    newToken = true;
-	  else
-	    {
-	      newToken = true;
-              end = c;
-	      curTok.computeType(code, begin, end);
-	      curTok.computeVal(code, begin, end);
 
+	  newToken = true;
+	  
+	  if(buffer.size())
+	    {
+	      curTok.computeType(buffer);
+	      curTok.computeVal(buffer);
+	      
 	      Atom* at = new Atom();
 	      *at = curTok;
 	      
 	      sexp->cells.push_back(at);
 
-	      begin =  -1;
+	      buffer.resize(0);
 	    }
 
-	  if(code[c] == ')')
+	  if(ch == ')')
 	    {
 	      if(sexps.size() > 1)
 		{
@@ -225,10 +228,20 @@ Sexp* parse(const std::string& code)
 		}
 	    }
 	}
-      else if((isalnum(code[c]) || isoperator(code[c])) && newToken)
+      else if((isalnum(ch) || isoperator(ch)) && newToken)
 	{
 	  newToken = false;
-	  begin = c;
+	}
+      
+      if(isalnum(ch) || isoperator(ch) || ch == '.')
+	{
+	  buffer.push_back(ch);
+	}
+
+      if(sexps.size() == 0)
+	{
+	  std::cout << std::endl << "-- parsing done" << std::endl;
+	  break;
 	}
     }
   
