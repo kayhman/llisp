@@ -5,6 +5,7 @@
 #include <numeric>
 #include <algorithm>
 #include <sstream>
+#include <map>
 
 bool isoperator(char c) {
     std::string const valid_chars = "+*-/!=<>\"";
@@ -18,6 +19,8 @@ struct Cell
   mutable std::string val;
   virtual void eval(const std::string& code) const = 0;
 };
+
+std::map<std::string, Cell*> env;
 
 struct Sexp : public Cell
 {
@@ -68,6 +71,9 @@ void Atom::eval(const std::string& code) const
 {
   if(this->type == Atom::String)
     this->val = code.substr(this->begin+1, this->end-this->begin-2);
+  else if(this->type == Atom::Symbol && 
+          env.find(code.substr(this->begin, this->end-this->begin)) != env.end() )
+    this->val = env[code.substr(this->begin, this->end-this->begin)]->val;
   else
     this->val = code.substr(this->begin, this->end-this->begin);
 }
@@ -108,6 +114,12 @@ void Sexp::eval(const std::string& code) const
       std::ostringstream ss;
       ss << res;
       this->val = ss.str(); 
+    }
+
+  if(cl->val.compare("define") == 0)
+    {
+      std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval(code);});
+      env[cells[1]->val] = cells[2];
     }
 }
 
@@ -178,10 +190,11 @@ Sexp* parse(const std::string& code)
 
 int main(int argc, char* argv[])
 {
-  std::string code = "(lapin 2 (add -3 -2))";
+  std::string code = "(define boubou \"chaise\")";
   Sexp* sexp = parse(code);
   sexp->print(code);
   std::cout << std::endl;
+  sexp->eval(code);
   
   code = "(defun lapin (a b) (add a b \"c\"))";
   sexp = parse(code);
@@ -191,7 +204,15 @@ int main(int argc, char* argv[])
   std::cout << std::endl;
 
 
-  code = "(concat \"one\" \"two\" (concat \"lapin\" \"pin\" \"pin\"))";
+  code = "(concat \"one\" \"two\" (concat boubou \"pin\" \"pin\"))";
+  sexp = parse(code);
+  sexp->print(code);
+  std::cout << std::endl;
+  sexp->eval(code);
+  std::cout << "eval : " << sexp->val << std::endl;
+
+  //create var
+  code = "(define lapin 12.666)";
   sexp = parse(code);
   sexp->print(code);
   std::cout << std::endl;
@@ -199,7 +220,7 @@ int main(int argc, char* argv[])
   std::cout << "eval : " << sexp->val << std::endl;
 
 
-  code = "(+ 1 2 (+ 6 3.666))";
+  code = "(+ 1 2 (+ lapin 3.666))";
   sexp = parse(code);
   sexp->print(code);
   std::cout << std::endl;
