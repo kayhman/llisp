@@ -181,9 +181,10 @@ Sexp* parse(const std::string& code)
   
   char ch;
   std::string buffer;
-  for(int c = 0 ;  ; ++c)
+  std::istringstream ss(code);
+  for(int cc = 0 ;  ; ++cc)
     {
-      ch = code[c];
+      ss >> std::noskipws >> ch;
 
       if(ch == '(' ||
 	 ch == ' ' ||
