@@ -19,6 +19,7 @@ struct Cell
   virtual ~Cell() {};
   mutable std::string val;
   mutable std::function<Cell*(std::vector<Cell*>)> closure;
+  virtual void print() const = 0;
   virtual void eval() const = 0;
 };
 
@@ -143,10 +144,16 @@ void Sexp::eval() const
             Sexp* body = dynamic_cast<Sexp*>(this->cells[2]);
             
             std::for_each(cls.begin(), cls.end(), [&](Cell* cell){cell->eval();});
+
             //assert(cls.size() == args->cells.size());
             for(int c = 0 ; c < cls.size() ; c++)
               env[args->cells[c]->val] = cls[c];
             body->eval();
+
+            //clean env
+            for(int c = 0 ; c < cls.size() ; c++)
+              env.erase(args->cells[c]->val);
+            
             return body;
           };
         }
@@ -277,7 +284,22 @@ int main(int argc, char* argv[])
   std::cout << "eval : " << sexp->val << std::endl;
 
 
-  code = "(try 0.666 0.666)";
+  code = "(try 0.777 0.666)";
+  sexp = parse(code);
+  sexp->print();
+  std::cout << std::endl;
+  sexp->eval();
+  std::cout << "eval : " << sexp->val << std::endl;
+
+  code = "(define myconcat (lambda (a b) (concat a b)))";
+  sexp = parse(code);
+  sexp->print();
+  std::cout << std::endl;
+  sexp->eval();
+  std::cout << "eval : " << sexp->val << std::endl;
+
+
+  code = "(myconcat \"jack\" \"paulo\")";
   sexp = parse(code);
   sexp->print();
   std::cout << std::endl;
