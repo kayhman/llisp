@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
   std::cout << std::endl;
 
 
-  code = "(concat \"one\" \"two\")";
+  code = "(concat \"one\" \"two\" (concat \"lapin\" \"pin\" \"pin\"))";
   sexp = parse(code);
   sexp->print(code);
   std::cout << std::endl;
@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
   std::cout << "eval : " << sexp->val << std::endl;
 
 
-  code = "(+ 1 2 3.666)";
+  code = "(+ 1 2 (+ 6 3.666))";
   sexp = parse(code);
   sexp->print(code);
   std::cout << std::endl;
