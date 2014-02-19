@@ -146,6 +146,13 @@ std::string Sexp::eval() const
       ss << res;
       return ss.str(); 
     }
+
+  if(cl->val.compare("progn") == 0)
+    {
+      std::cout << "progn " << cells.size()  << std::endl;
+      std::for_each(cells.begin()+1, cells.end()-1, [&](Cell* cell){cell->eval();});
+      return cells.back()->eval(); 
+    }
   
   if(cl->val.compare("setq") == 0)   
     {
@@ -238,7 +245,7 @@ Sexp* parse(std::istream& ss)
      for(int cc = 0 ;  ; ++cc)
      {
           ss >> std::noskipws >> ch;
-          if(ch == '(' || ch == ' ' || ch == ')')
+          if(ch == '(' || ch == ' ' || ch == ')' || ch == '\n')
           {
                if(ch == '(')
                {
