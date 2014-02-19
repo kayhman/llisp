@@ -122,6 +122,36 @@ void Sexp::eval() const
           this->val = ss.str(); 
      }
 
+     if(cl->val.compare("-") == 0)
+     {
+          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
+          double res = atof(cells[1]->val.c_str());
+          std::for_each(cells.begin()+2, cells.end(), [&](Cell* cell){res -= atof(cell->val.c_str());});
+          std::ostringstream ss;
+          ss << res;
+          this->val = ss.str(); 
+     }
+
+     if(cl->val.compare("*") == 0)
+     {
+          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
+          double res = 1.0;
+          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){res *= atof(cell->val.c_str());});
+          std::ostringstream ss;
+          ss << res;
+          this->val = ss.str(); 
+     }
+
+     if(cl->val.compare("/") == 0)
+     {
+          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
+          double res = atof(cells[1]->val.c_str());
+          std::for_each(cells.begin()+2, cells.end(), [&](Cell* cell){res /= atof(cell->val.c_str());});
+          std::ostringstream ss;
+          ss << res;
+          this->val = ss.str(); 
+     }
+
      if(cl->val.compare("define") == 0)   
      {
           Sexp* lambda = dynamic_cast<Sexp*>(cells[2]);
@@ -262,76 +292,4 @@ int main(int argc, char* argv[])
      }
      
      return 0;
-/*
-     std::string code = "(define boubou \"chaise\")";
-     Sexp* sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     sexp->eval();
-  
-     code = "(defun lapin (a b) (add a b \"c\"))";
-     sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     std::cout << std::endl;
-     std::cout << std::endl;
-
-
-     code = "(concat \"one\" \"two\" (concat boubou \"pin\" \"pin\"))";
-     sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     sexp->eval();
-     std::cout << "eval : " << sexp->val << std::endl;
-
-     //create var
-     code = "(define lapin 12.666)";
-     sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     sexp->eval();
-     std::cout << "eval : " << sexp->val << std::endl;
-
-
-     code = "(+ 1 2 (+ lapin 3.666))";
-     sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     sexp->eval();
-     std::cout << "eval : " << sexp->val << std::endl;
-
-
-
-     code = "(define try (lambda (a b) (+ a b)))";
-     sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     sexp->eval();
-     std::cout << "eval : " << sexp->val << std::endl;
-
-
-     code = "(try 0.777 0.666)";
-     sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     sexp->eval();
-     std::cout << "eval : " << sexp->val << std::endl;
-
-     code = "(define myconcat (lambda (a b) (concat a b)))";
-     sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     sexp->eval();
-     std::cout << "eval : " << sexp->val << std::endl;
-
-
-     code = "(myconcat \"jack\" \"paulo\")";
-     sexp = parse(code);
-     sexp->print();
-     std::cout << std::endl;
-     sexp->eval();
-     std::cout << "eval : " << sexp->val << std::endl;
-
-     return 0;
-*/
 }
