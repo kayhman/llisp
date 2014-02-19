@@ -106,11 +106,8 @@ std::string Sexp::eval() const
   //  std::cout << "size " << this->cells.size() << std::endl;
   
   Cell* cl = this->cells[0];
-  //cl->eval();
 
-  std::cout << "val " << cl->val << std::endl;
 
-  
   if(cl->val.compare("concat") == 0)
     std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){this->val += cell->eval();}); 
   
