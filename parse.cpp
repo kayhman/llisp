@@ -17,33 +17,33 @@ bool isoperator(char c) {
 
 struct Cell
 {
-     virtual ~Cell() {};
-     mutable std::string val;
-     mutable std::function<Cell*(std::vector<Cell*>)> closure;
-     virtual void print() const = 0;
-     virtual void eval() const = 0;
+  virtual ~Cell() {};
+  mutable std::function<std::string(std::vector<Cell*>)> closure;
+  virtual void print() const = 0;
+  virtual std::string eval() const = 0;
+  mutable std::string val;
 };
 
 std::map<std::string, Cell*> env;
 
 struct Sexp : public Cell
 {
-     std::vector<Cell*> cells;
-
-     void print() const;
-     virtual void eval() const;
+  std::vector<Cell*> cells;
+  
+  void print() const;
+  virtual std::string eval() const;
 };
 
 
 struct Atom : public Cell
 {
-     enum Type {Symbol, Real, String, Closure};
-     Type type;
-
-     void print() const;
-     void computeType(const std::string& code);
-     void computeVal(const std::string& code) const;
-     virtual void eval() const;
+  enum Type {Symbol, Real, String, Closure};
+  Type type;
+  
+  void print() const;
+  void computeType(const std::string& code);
+  void computeVal(const std::string& code) const;
+  virtual std::string eval() const;
 };
 
 void Atom::print() const
@@ -61,27 +61,27 @@ void Atom::print() const
 void Atom::computeType(const std::string& code)
 {
      //this->val = code;
-     this-> type = Atom::Symbol;
+     this->type = Atom::Symbol;
      if(isdigit(code.front()) ||  isoperator(code.front()))
-          this-> type = Atom::Real;
+          this->type = Atom::Real;
      if(code.front() == '"' &&  code.back() == '"')
-          this-> type = Atom::String;
+          this->type = Atom::String;
 }
 
 void Atom::computeVal(const std::string& code) const
 {
-     if(this->type == Atom::String)
-          this->val = code.substr(1, code.size()-2);
-     else
-          this->val = code;
+  this->val = code;
 }
 
 
-void Atom::eval() const
+std::string Atom::eval() const
 {
-     if(this->type == Atom::Symbol && 
-        env.find(this->val) != env.end() )
-          this->val = env[this->val]->val; //TODO : we overwrite value -> bug
+  if(this->type == Atom::Symbol &&  env.find(this->val) != env.end() )
+    return env[this->val]->eval();
+  else if(this->type == Atom::String)
+    return this->val.substr(1, this->val.size()-2);
+  else
+    return this->val;
 }
 
 void Sexp::print() const
@@ -98,109 +98,134 @@ void Sexp::print() const
           if(sx)
                sx->print();
      }
-     std::cout << "]";
+     std::cout << "]"<< std::endl;
 }
 
-void Sexp::eval() const
+std::string Sexp::eval() const
 {
-     Cell* cl = this->cells[0];
-     cl->eval();
-
-     if(cl->val.compare("concat") == 0)
-     {
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();}); 
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){this->val += cell->val;}); 
-     }
-
-     if(cl->val.compare("+") == 0)
-     {
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
-          double res = 0;
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){res += atof(cell->val.c_str());});
-          std::ostringstream ss;
-          ss << res;
-          this->val = ss.str(); 
-     }
-
-     if(cl->val.compare("-") == 0)
-     {
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
-          double res = atof(cells[1]->val.c_str());
-          std::for_each(cells.begin()+2, cells.end(), [&](Cell* cell){res -= atof(cell->val.c_str());});
-          std::ostringstream ss;
-          ss << res;
-          this->val = ss.str(); 
-     }
-
-     if(cl->val.compare("*") == 0)
-     {
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
-          double res = 1.0;
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){res *= atof(cell->val.c_str());});
-          std::ostringstream ss;
-          ss << res;
-          this->val = ss.str(); 
-     }
-
-     if(cl->val.compare("/") == 0)
-     {
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
-          double res = atof(cells[1]->val.c_str());
-          std::for_each(cells.begin()+2, cells.end(), [&](Cell* cell){res /= atof(cell->val.c_str());});
-          std::ostringstream ss;
-          ss << res;
-          this->val = ss.str(); 
-     }
-
-     if(cl->val.compare("define") == 0)   
-     {
-          Sexp* lambda = dynamic_cast<Sexp*>(cells[2]);
-          std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){cell->eval();});
-          
-          if(lambda)
-               if(lambda->cells.size() > 0)
-                    if(lambda->cells[0]->val.compare("lambda") == 0)
-                         cells[2]->val = cells[1]->val;
-          env[cells[1]->val] = cells[2];
-     }
-     
-     if(cl->val.compare("lambda") == 0)
-     {
-          this->cells[1]->eval();
-          Sexp* args = dynamic_cast<Sexp*>(this->cells[1]);
-          Sexp* body = dynamic_cast<Sexp*>(this->cells[2]);
-          if(args && body)
-          {
-               this->closure = [&](std::vector<Cell*> cls) {
-                    Sexp* args = dynamic_cast<Sexp*>(this->cells[1]);
-                    Sexp* body = dynamic_cast<Sexp*>(this->cells[2]);
-            
-                    std::for_each(cls.begin(), cls.end(), [&](Cell* cell){cell->eval();});
-
-                    //assert(cls.size() == args->cells.size());
-                    for(int c = 0 ; c < cls.size() ; c++)
-                         env[args->cells[c]->val] = cls[c];
-                    body->eval();
-
-                    //clean env
-                    for(int c = 0 ; c < cls.size() ; c++)
-                         env.erase(args->cells[c]->val);
-            
-                    return body;
-               };
-          }
-     }
+  //  std::cout << "size " << this->cells.size() << std::endl;
   
-     if(env.find(cl->val) != env.end())
-     {
-          std::vector<Cell*> args(this->cells.begin()+1, this->cells.end());
-          Cell * res = env[cl->val]->closure(args);
-          this->val = res->val;
-     }
+  Cell* cl = this->cells[0];
+  //cl->eval();
 
-     std::cout << " -> " << this->val << std::endl;
+  std::cout << "val " << cl->val << std::endl;
+
+  
+  if(cl->val.compare("concat") == 0)
+    std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){this->val += cell->eval();}); 
+  
+  if(cl->val.compare("+") == 0)
+    {
+      double res = 0;
+      std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){res += atof(cell->eval().c_str());});
+      std::ostringstream ss;
+      ss << res;
+      return ss.str(); 
+    }
+  
+  if(cl->val.compare("-") == 0)
+    {
+      double res = atof(cells[1]->eval().c_str());
+      std::for_each(cells.begin()+2, cells.end(), [&](Cell* cell){res -= atof(cell->eval().c_str());});
+      std::ostringstream ss;
+      ss << res;
+      return ss.str(); 
+    }
+  
+  if(cl->val.compare("*") == 0)
+    {
+      double res = 1.0;
+      std::for_each(cells.begin()+1, cells.end(), [&](Cell* cell){res *= atof(cell->eval().c_str());});
+      std::ostringstream ss;
+      ss << res;
+      return ss.str(); 
+    }
+  
+  if(cl->val.compare("/") == 0)
+    {
+      double res = atof(cells[1]->eval().c_str());
+      std::for_each(cells.begin()+2, cells.end(), [&](Cell* cell){res /= atof(cell->eval().c_str());});
+      std::ostringstream ss;
+      ss << res;
+      return ss.str(); 
+    }
+  
+  if(cl->val.compare("setq") == 0)   
+    {
+      //std::for_each(cells.begin()+2, cells.end(), [&](Cell* cell){cell->eval();});
+      env[cells[1]->val] = cells[2];
+      return cells[2]->eval();
+    }
+  
+  if(cl->val.compare("defun") == 0)   
+    {
+      Atom* fname = dynamic_cast<Atom*>(this->cells[1]);
+      Sexp* args = dynamic_cast<Sexp*>(this->cells[2]);
+      Sexp* body = dynamic_cast<Sexp*>(this->cells[3]);
+      
+      if(args && body)
+        {
+          fname->closure = [&](std::vector<Cell*> cls) {
+            Sexp* args = dynamic_cast<Sexp*>(this->cells[2]);
+            Sexp* body = dynamic_cast<Sexp*>(this->cells[3]);
+            
+            //assert(cls.size() == args->cells.size());
+            for(int c = 0 ; c < cls.size() ; c++)
+              env[args->cells[c]->val] = cls[c];
+            
+            std::string res = body->eval();
+            
+            //clean env
+             for(int c = 0 ; c < cls.size() ; c++)
+               env.erase(args->cells[c]->val);
+            
+            return res;
+          };
+        }
+      env[fname->val] = fname;
+      return "";
+    }
+
+  /*
+  if(cl->val.compare("lambda") == 0)
+    {
+      this->cells[1]->eval();
+      Sexp* args = dynamic_cast<Sexp*>(this->cells[1]);
+      Sexp* body = dynamic_cast<Sexp*>(this->cells[2]);
+      if(args && body)
+        {
+          this->closure = [&](std::vector<Cell*> cls) {
+            std::cout << "call func" << std::endl;
+            Sexp* args = dynamic_cast<Sexp*>(this->cells[1]);
+            Sexp* body = dynamic_cast<Sexp*>(this->cells[2]);
+            
+            std::for_each(cls.begin(), cls.end(), [&](Cell* cell){cell->eval();});
+            
+            //assert(cls.size() == args->cells.size());
+            for(int c = 0 ; c < cls.size() ; c++)
+              env[args->cells[c]->val] = cls[c];
+            std::string res = body->eval();
+            
+                    //clean env
+            for(int c = 0 ; c < cls.size() ; c++)
+              env.erase(args->cells[c]->val);
+            
+            return res;
+          };
+        }
+      return "";
+      }*/
 
 
+  if(env.find(cl->val) != env.end())
+    {
+
+      std::vector<Cell*> args(this->cells.begin()+1, this->cells.end());
+      return  env[cl->val]->closure(args);
+    }
+  
+  return this->val;
+  
 }
 
 Sexp* parse(std::istream& ss)
@@ -284,8 +309,9 @@ int main(int argc, char* argv[])
           Sexp* sexp = parse(in);
           if(sexp)
           {
-               sexp->print();
-               sexp->eval();
+            sexp->print();
+            //sexp->eval();
+            std::cout << "-> " << sexp->eval() << std::endl;
           }
           else
                break;
