@@ -1,16 +1,47 @@
-(+ 1 2 3)
-(+ 6 2 4)
-(- 6 2 5)
-(* 1 2 3)
+(progn 
+	(+ 1 2 3)
+	(- 1 2 3)
+	(* 1 2 3)
+	(/ 1 2 3))
+
 (setq lapin 0.666)
-(+ lapin lapin lapin)
-(* 3 lapin)
-(/ 4 2 3)
+
+(- lapin 0.666)
+
+(concat "ba" "ba")
+
+(setq ba "bi")
+(concat ba "ba")
+
+(concat ba "bou")
+(setq ba "bou")
+(concat ba "bou")
 
 
-(defun myfunc (a b) (+ a b))
-(myfunc lapin 13)
-(myfunc lapin 3)
+(defun mymy (a b) 
+	(progn 
+         (* a b)))
+	
+(+ 1 3)
+(mymy lapin 2)
+(mymy lapin lapin)
+(setq lapin 0.777)
 
-(setq lapin (myfunc lapin 13))
-(myfunc lapin 3)
+(mymy lapin lapin)
+(setq lapin (mymy 1 2))
+(printenv)
+
+(+ lapin 0)
+(mymy lapin lapin)
+
+(lambda (a b) (+ a b))
+(setq lapin (lambda (a b) (+ a b)))
+(printenv)
+(funcall lapin 1 2)
+
+(funcall (lambda (a b) (+ a b)) 3 4)
+
+(defmacro copy (a)
+  `,a)
+
+(concat 'lapin `lapin)
