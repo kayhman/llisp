@@ -24,8 +24,7 @@ struct Cell
   mutable std::string val;
 };
 
-std::map<std::string, std::string> env;
-std::map<std::string, Cell*> funenv;
+std::map<std::string, Cell*> env;
 
 struct Sexp : public Cell
 {
@@ -78,7 +77,7 @@ void Atom::computeVal(const std::string& code) const
 std::string Atom::eval() const
 {
   if(this->type == Atom::Symbol &&  env.find(this->val) != env.end() )
-    return env[this->val];
+    return env[this->val]->eval();
   else if(this->type == Atom::String)
     return this->val.substr(1, this->val.size()-2);
   else
@@ -156,8 +155,14 @@ std::string Sexp::eval() const
   
   if(cl->val.compare("setq") == 0)   
     {
-      env[cells[1]->val] = cells[2]->eval();
-      return env[cells[1]->val];
+      if(env.find(cells[1]->val) == env.end())
+        env[cells[1]->val] = new Atom();
+      
+      const std::string& res =  cells[2]->eval();
+      env[cells[1]->val]->val = res;
+      env[cells[1]->val]->closure = cells[2]->closure;
+              
+      return res;
     }
   
   if(cl->val.compare("defun") == 0)   
@@ -169,16 +174,15 @@ std::string Sexp::eval() const
       if(args && body)
         {
           fname->closure = [&](std::vector<Cell*> cls) {
-
             Sexp* args = dynamic_cast<Sexp*>(this->cells[2]);
             Sexp* body = dynamic_cast<Sexp*>(this->cells[3]);
             
             //assert(cls.size() == args->cells.size());
             for(int c = 0 ; c < cls.size() ; c++)
-              env[args->cells[c]->val] = cls[c]->eval();
+              env[args->cells[c]->val] = cls[c];
             
             std::string res = body->eval();
-                        
+            
             //clean env
              for(int c = 0 ; c < cls.size() ; c++)
                env.erase(args->cells[c]->val);
@@ -186,7 +190,7 @@ std::string Sexp::eval() const
             return res;
           };
         }
-      funenv[fname->val] = fname;
+      env[fname->val] = fname;
       return "";
     }
 
@@ -194,7 +198,7 @@ std::string Sexp::eval() const
     {
       std::stringstream ss;
       ss << std::endl;
-      std::for_each(env.begin(), env.end(), [&](std::pair<std::string, std::string> p){ss << "\t" << p.first << " -> " << p.second << std::endl;});
+      std::for_each(env.begin(), env.end(), [&](std::pair<std::string, Cell*> p){ss << p.first << " -> " << p.second->val << std::endl;});
       return ss.str();
     }
 
@@ -229,13 +233,11 @@ std::string Sexp::eval() const
       }*/
 
 
-  if(funenv.find(cl->val) != funenv.end())
+  if(env.find(cl->val) != env.end())
     {
 
       std::vector<Cell*> args(this->cells.begin()+1, this->cells.end());
-      const std::string& res = funenv[cl->val]->closure(args);
-      this->val = res;
-      return res;
+      return  env[cl->val]->closure(args);
     }
   
   return this->val;
