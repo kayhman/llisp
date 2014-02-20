@@ -38,3 +38,5 @@
 (setq lapin (lambda (a b) (+ a b)))
 (printenv)
 (funcall lapin 1 2)
+
+(funcall (lambda (a b) (+ a b)) 3 4)

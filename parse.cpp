@@ -23,21 +23,9 @@ struct Cell
   
   virtual void print() const = 0;
   virtual std::string eval() const = 0;
-  std::string eval_closure(std::vector<Cell*>) const;
-
 };
 
 std::map<std::string, Cell*> env;
-
-
-std::string Cell::eval_closure(std::vector<Cell*> args) const
-{
-  if(env.find(this->val) != env.end())
-    return env[this->val]->closure(args);
-  else
-    return this->closure(args);
-
-}
 
 struct Sexp : public Cell
 {
@@ -90,7 +78,11 @@ void Atom::computeVal(const std::string& code) const
 std::string Atom::eval() const
 {
   if(this->type == Atom::Symbol &&  env.find(this->val) != env.end() )
-    return env[this->val]->eval();
+    {
+      const std::string& res = env[this->val]->eval();
+      this->closure = env[this->val]->closure;
+      return res;
+    }
   else if(this->type == Atom::String)
     return this->val.substr(1, this->val.size()-2);
   else
@@ -248,8 +240,9 @@ std::string Sexp::eval() const
   if(cl->val.compare("funcall") == 0)
     {
       Cell* lambda = dynamic_cast<Cell*>(this->cells[1]);
+      lambda->eval();
       std::vector<Cell*> args(this->cells.begin()+2, this->cells.end());
-      return  lambda->eval_closure(args);
+      return  lambda->closure(args);
     }
 
 
