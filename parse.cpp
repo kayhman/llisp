@@ -276,7 +276,7 @@ Sexp* parse(std::istream& ss)
                if(ch == '(')
                {
                     Sexp* sx = new Sexp();
-                    if(sexp)
+                    if(sexps.size())
                          sexp->cells.push_back(sx);
                     sexp = sx;
                     sexps.push_back(sx);
