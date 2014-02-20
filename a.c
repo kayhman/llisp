@@ -20,12 +20,16 @@
 
 (defun mymy (a b) 
 	(progn 
-		(+ a b)
-		(- a b) 
-		(* a b)))
+         (* a b)))
 	
 (+ 1 3)
 (mymy lapin 2)
 (mymy lapin lapin)
 (setq lapin 0.777)
+
+(mymy lapin lapin)
+(setq lapin (mymy 1 2))
+(printenv)
+
+(+ lapin 0)
 (mymy lapin lapin)
