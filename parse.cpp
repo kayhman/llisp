@@ -19,12 +19,25 @@ struct Cell
 {
   virtual ~Cell() {};
   mutable std::function<std::string(std::vector<Cell*>)> closure;
+  mutable std::string val;
+  
   virtual void print() const = 0;
   virtual std::string eval() const = 0;
-  mutable std::string val;
+  std::string eval_closure(std::vector<Cell*>) const;
+
 };
 
 std::map<std::string, Cell*> env;
+
+
+std::string Cell::eval_closure(std::vector<Cell*> args) const
+{
+  if(env.find(this->val) != env.end())
+    return env[this->val]->closure(args);
+  else
+    return this->closure(args);
+
+}
 
 struct Sexp : public Cell
 {
@@ -202,35 +215,42 @@ std::string Sexp::eval() const
       return ss.str();
     }
 
-  /*
+  
   if(cl->val.compare("lambda") == 0)
     {
-      this->cells[1]->eval();
+      Atom* lambda = dynamic_cast<Atom*>(cl);
       Sexp* args = dynamic_cast<Sexp*>(this->cells[1]);
       Sexp* body = dynamic_cast<Sexp*>(this->cells[2]);
+      
       if(args && body)
         {
           this->closure = [&](std::vector<Cell*> cls) {
-            std::cout << "call func" << std::endl;
             Sexp* args = dynamic_cast<Sexp*>(this->cells[1]);
             Sexp* body = dynamic_cast<Sexp*>(this->cells[2]);
-            
-            std::for_each(cls.begin(), cls.end(), [&](Cell* cell){cell->eval();});
             
             //assert(cls.size() == args->cells.size());
             for(int c = 0 ; c < cls.size() ; c++)
               env[args->cells[c]->val] = cls[c];
+            
             std::string res = body->eval();
             
-                    //clean env
-            for(int c = 0 ; c < cls.size() ; c++)
-              env.erase(args->cells[c]->val);
+            //clean env
+             for(int c = 0 ; c < cls.size() ; c++)
+               env.erase(args->cells[c]->val);
             
             return res;
           };
         }
-      return "";
-      }*/
+      
+      return "closure";
+    }
+  
+  if(cl->val.compare("funcall") == 0)
+    {
+      Cell* lambda = dynamic_cast<Cell*>(this->cells[1]);
+      std::vector<Cell*> args(this->cells.begin()+2, this->cells.end());
+      return  lambda->eval_closure(args);
+    }
 
 
   if(env.find(cl->val) != env.end())

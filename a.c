@@ -33,3 +33,8 @@
 
 (+ lapin 0)
 (mymy lapin lapin)
+
+(lambda (a b) (+ a b))
+(setq lapin (lambda (a b) (+ a b)))
+(printenv)
+(funcall lapin 1 2)
