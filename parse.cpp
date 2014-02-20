@@ -10,7 +10,7 @@
 #include <fstream>
 
 bool isoperator(char c) {
-     std::string const valid_chars = "+*-/!=<>\"";
+     std::string const valid_chars = "+*-/!=<>\"'`";
      return valid_chars.find(c) != std::string::npos;
 }
 
@@ -61,7 +61,6 @@ void Atom::print() const
 
 void Atom::computeType(const std::string& code)
 {
-     //this->val = code;
      this->type = Atom::Symbol;
      if(isdigit(code.front()) ||  isoperator(code.front()))
           this->type = Atom::Real;
@@ -85,6 +84,8 @@ std::string Atom::eval() const
     }
   else if(this->type == Atom::String)
     return this->val.substr(1, this->val.size()-2);
+  else if(this->val.front() == '\'')
+    return this->val.substr(1, this->val.size()-1);
   else
     return this->val;
 }

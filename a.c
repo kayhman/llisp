@@ -43,3 +43,5 @@
 
 (defmacro copy (a)
   `,a)
+
+(concat 'lapin `lapin)
