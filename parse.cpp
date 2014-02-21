@@ -35,7 +35,29 @@ public:
   Val& operator[] (const Key& k);
   Val& operator[] (Key& k);
   bool find (const Key& k);
+  Env();
+  void addEnvMap(const std::map<Key, Val>& env);
+  void removeEnv();
 };
+
+template <typename Key, typename Val>
+Env<Key, Val>::Env()
+{
+  envs.push_back(std::map<Key, Val>());
+}
+
+template <typename Key, typename Val>
+void Env<Key, Val>::addEnvMap(const std::map<Key, Val>& env)
+{
+  this->envs.push_back(env);
+
+}
+
+template <typename Key, typename Val>
+void Env<Key, Val>::removeEnv()
+{
+  this->envs.pop_back();
+}
 
 template <typename Key, typename Val>
 Val& Env<Key, Val>::operator[] (const Key& k)
@@ -43,6 +65,8 @@ Val& Env<Key, Val>::operator[] (const Key& k)
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
     if(envIt->find(k) != envIt->end())
       return (*envIt)[k];
+  
+  return envs.back()[k];
 }
 
 template <typename Key, typename Val>
@@ -51,6 +75,8 @@ Val& Env<Key, Val>::operator[] (Key& k)
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
     if(envIt->find(k) != envIt->end())
       return (*envIt)[k];
+  
+  return envs.back()[k];
 }
 
 template <typename Key, typename Val>
@@ -117,7 +143,7 @@ void Atom::computeVal(const std::string& code) const
 
 std::string Atom::eval() const
 {
-  if(this->type == Atom::Symbol &&  env.find(this->val) != env.end() )
+  if(this->type == Atom::Symbol &&  env.find(this->val))
     {
       const std::string& res = env[this->val]->eval();
       this->closure = env[this->val]->closure;
@@ -199,7 +225,7 @@ std::string Sexp::eval() const
   
   if(cl->val.compare("setq") == 0)   
     {
-      if(env.find(cells[1]->val) == env.end())
+      if(!env.find(cells[1]->val))
         env[cells[1]->val].reset(new Atom());
       
       const std::string& res =  cells[2]->eval();
@@ -220,13 +246,13 @@ std::string Sexp::eval() const
           fname->closure = [args, body, fname](std::vector<std::shared_ptr<Cell> > cls) {
 
             //assert(cls.size() == args->cells.size());
+            std::map<std::string, std::shared_ptr<Cell> > newEnv;
             for(int c = 0 ; c < cls.size() ; c++)
-              env[args->cells[c]->val] = cls[c];
+              newEnv[args->cells[c]->val] = cls[c];
 
+            env.addEnvMap(newEnv);
             std::string res = body->eval();
-            //clean env
-             for(int c = 0 ; c < cls.size() ; c++)
-               env.erase(args->cells[c]->val);
+            env.removeEnv();
 
             return res;
           };
@@ -239,7 +265,7 @@ std::string Sexp::eval() const
     {
       std::stringstream ss;
       ss << std::endl;
-      std::for_each(env.begin(), env.end(), [&](std::pair<std::string, std::shared_ptr<Cell> > p){ss << p.first << " -> " << p.second->val << std::endl;});
+      //      std::for_each(env.begin(), env.end(), [&](std::pair<std::string, std::shared_ptr<Cell> > p){ss << p.first << " -> " << p.second->val << std::endl;});
       return ss.str();
     }
 
@@ -254,15 +280,13 @@ std::string Sexp::eval() const
           this->closure = [body, args](std::vector<std::shared_ptr<Cell> > cls) {
             
             //assert(cls.size() == args->cells.size());
+            std::map<std::string, std::shared_ptr<Cell> > newEnv;
             for(int c = 0 ; c < cls.size() ; c++)
-              env[args->cells[c]->val] = cls[c];
+              newEnv[args->cells[c]->val] = cls[c];
             
+            env.addEnvMap(newEnv);
             std::string res = body->eval();
-            
-            //clean env
-             for(int c = 0 ; c < cls.size() ; c++)
-               env.erase(args->cells[c]->val);
-            
+            env.removeEnv();
             return res;
           };
         }
@@ -277,7 +301,7 @@ std::string Sexp::eval() const
     }
 
 
-  if(env.find(cl->val) != env.end())
+  if(env.find(cl->val))
     return  env[cl->val]->closure( std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
 
   
@@ -368,7 +392,6 @@ int main(int argc, char* argv[])
          {
            sexp->print();
            std::cout << "-> " << sexp->eval() << std::endl;
-           std::cout << "check " << sexp->cells.size() << std::endl;
          }
           else
                break;
