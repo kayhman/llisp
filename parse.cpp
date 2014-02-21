@@ -26,7 +26,47 @@ struct Cell
   virtual std::string eval() const = 0;
 };
 
-std::map<std::string, std::shared_ptr<Cell> > env;
+template <typename Key, typename Val>
+class Env
+{
+private:
+  std::vector<std::map<Key,Val> > envs;
+public:
+  Val& operator[] (const Key& k);
+  Val& operator[] (Key& k);
+  bool find (const Key& k);
+};
+
+template <typename Key, typename Val>
+Val& Env<Key, Val>::operator[] (const Key& k)
+{
+  for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
+    if(envIt->find(k) != envIt->end())
+      return (*envIt)[k];
+}
+
+template <typename Key, typename Val>
+Val& Env<Key, Val>::operator[] (Key& k)
+{
+  for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
+    if(envIt->find(k) != envIt->end())
+      return (*envIt)[k];
+}
+
+template <typename Key, typename Val>
+bool Env<Key, Val>::find (const Key& k)
+{
+  for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
+    if(envIt->find(k) != envIt->end())
+      return true;
+
+  return false;
+}
+
+template class Env<std::string, std::shared_ptr<Cell> >;
+
+//std::map<std::string, std::shared_ptr<Cell> > env;
+Env<std::string, std::shared_ptr<Cell> > env;
 
 struct Sexp : public Cell
 {
@@ -210,8 +250,7 @@ std::string Sexp::eval() const
       std::shared_ptr<Sexp> args =  std::dynamic_pointer_cast<Sexp>(this->cells[1]);
       std::shared_ptr<Sexp> body =  std::dynamic_pointer_cast<Sexp>(this->cells[2]);
       
-      if(args && body)
-        {
+      if(args && body) {
           this->closure = [body, args](std::vector<std::shared_ptr<Cell> > cls) {
             
             //assert(cls.size() == args->cells.size());
@@ -231,20 +270,16 @@ std::string Sexp::eval() const
       return "closure";
     }
   
-  if(cl->val.compare("funcall") == 0)
-    {
+  if(cl->val.compare("funcall") == 0) {
       std::shared_ptr<Cell> lambda =  std::dynamic_pointer_cast<Cell>(this->cells[1]);
       lambda->eval();
-      std::vector<std::shared_ptr<Cell> > args(this->cells.begin()+2, this->cells.end());
-      return  lambda->closure(args);
+      return  lambda->closure(std::vector<std::shared_ptr<Cell> > (this->cells.begin()+2, this->cells.end()));
     }
 
 
   if(env.find(cl->val) != env.end())
-    {
-      std::vector<std::shared_ptr<Cell> > args(this->cells.begin()+1, this->cells.end());
-      return  env[cl->val]->closure(args);
-    }
+    return  env[cl->val]->closure( std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
+
   
   return this->val;
   
