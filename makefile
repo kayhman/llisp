@@ -5,8 +5,13 @@ CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl
 #CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -dl
 #CFLAGS=-std=c++11 -stdlib=libc++ `llvm-config --libs core` `llvm-config --ldflags` 
 
+all: elisp macro
 
-elisp: parse.cpp
+elisp: parse.cpp 
+	clear
+	$(CPP) $(CFLAGS) -o $@ $?
+
+macro: macro.cpp 
 	clear
 	$(CPP) $(CFLAGS) -o $@ $?
 
