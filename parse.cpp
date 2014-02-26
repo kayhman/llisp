@@ -89,7 +89,7 @@ bool Env<Key, Val>::find (const Key& k)
   return false;
 }
 
-template class Env<std::string, std::shared_ptr<Cell> >;
+//template class Env<std::string, std::shared_ptr<Cell> >;
 
 //std::map<std::string, std::shared_ptr<Cell> > env;
 Env<std::string, std::shared_ptr<Cell> > env;
