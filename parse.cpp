@@ -16,41 +16,48 @@ bool isoperator(char c) {
 }
 
 
-struct Cell
-{
-  virtual ~Cell() {};
-  mutable std::function<std::string(std::vector<std::shared_ptr<Cell> >)> closure;
-  mutable std::string val;
-  
-  virtual void print() const = 0;
-  virtual std::string eval() const = 0;
-};
 
 template <typename Key, typename Val>
 class Env
 {
+public:
+  static std::map<Key,Val> top;
 private:
-  std::vector<std::map<Key,Val> > envs;
+  std::vector<std::map<Key,Val>* > envs;
 public:
   Val& operator[] (const Key& k);
   Val& operator[] (Key& k);
   bool find (const Key& k);
   Env();
-  void addEnvMap(const std::map<Key, Val>& env);
+  void addEnvMap(std::map<Key, Val>* env);
   void removeEnv();
 };
+
+struct Cell
+{
+  typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
+  virtual ~Cell() {};
+  mutable std::function<std::shared_ptr<Cell>(std::vector<std::shared_ptr<Cell> >)> closure;
+  mutable std::string val;
+
+  virtual void print() const = 0;
+  virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
+
+  friend std::ostream& operator<< (std::ostream& stream, const Cell& cell);
+};
+
+template<typename K, typename V> std::map<K, V> Env<K,V>::top;
 
 template <typename Key, typename Val>
 Env<Key, Val>::Env()
 {
-  envs.push_back(std::map<Key, Val>());
+  envs.push_back(&top);
 }
 
 template <typename Key, typename Val>
-void Env<Key, Val>::addEnvMap(const std::map<Key, Val>& env)
+void Env<Key, Val>::addEnvMap(std::map<Key, Val>* env)
 {
   this->envs.push_back(env);
-
 }
 
 template <typename Key, typename Val>
@@ -63,43 +70,39 @@ template <typename Key, typename Val>
 Val& Env<Key, Val>::operator[] (const Key& k)
 {
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
-    if(envIt->find(k) != envIt->end())
-      return (*envIt)[k];
-  
-  return envs.back()[k];
+    if((*envIt)->find(k) != (*envIt)->end())
+ 	return (**envIt)[k];
+   return (*envs.back())[k];
 }
 
 template <typename Key, typename Val>
 Val& Env<Key, Val>::operator[] (Key& k)
 {
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
-    if(envIt->find(k) != envIt->end())
-      return (*envIt)[k];
-  
-  return envs.back()[k];
+    if((*envIt)->find(k) != (*envIt)->end())
+ 	return (**envIt)[k];
+   return (*envs.back())[k];
 }
 
 template <typename Key, typename Val>
 bool Env<Key, Val>::find (const Key& k)
 {
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
-    if(envIt->find(k) != envIt->end())
-      return true;
-
+    if((*envIt)->find(k) != (*envIt)->end())
+	return true;
   return false;
 }
 
 //template class Env<std::string, std::shared_ptr<Cell> >;
-
-//std::map<std::string, std::shared_ptr<Cell> > env;
-Env<std::string, std::shared_ptr<Cell> > env;
 
 struct Sexp : public Cell
 {
   std::vector<std::shared_ptr<Cell> > cells;
   
   void print() const;
-  virtual std::string eval() const;
+  virtual std::shared_ptr<Cell> eval(CellEnv& env);
+
+  friend std::ostream& operator<< (std::ostream& stream, const Sexp& cell);
 };
 
 
@@ -111,8 +114,35 @@ struct Atom : public Cell
   void print() const;
   void computeType(const std::string& code);
   void computeVal(const std::string& code) const;
-  virtual std::string eval() const;
+  virtual std::shared_ptr<Cell> eval(CellEnv& env);
+
+  friend std::ostream& operator<< (std::ostream& stream, const Atom& cell);
 };
+
+
+std::ostream& operator<< (std::ostream& stream, const Cell& cell)
+{
+  const Atom * atom = dynamic_cast<const Atom*>(&cell);
+  const Sexp * sexp = dynamic_cast<const Sexp*>(&cell);
+
+  if(atom)
+       stream << *atom;
+ 
+  if(sexp)
+       stream << *sexp;
+}
+
+std::ostream& operator<< (std::ostream& stream, const Sexp& cell)
+{
+  stream << "(";
+  std::for_each(cell.cells.begin(), cell.cells.end(), [&](std::shared_ptr<Cell> cell){stream << cell->val << " ";}); 
+  stream << ")";
+}
+
+std::ostream& operator<< (std::ostream& stream, const Atom& atom)
+{
+  stream << atom.val;
+}
 
 void Atom::print() const
 {
@@ -141,20 +171,35 @@ void Atom::computeVal(const std::string& code) const
 }
 
 
-std::string Atom::eval() const
+std::shared_ptr<Cell> Atom::eval(CellEnv& env)
 {
   if(this->type == Atom::Symbol &&  env.find(this->val))
     {
-      const std::string& res = env[this->val]->eval();
-      this->closure = env[this->val]->closure;
-      return res;
+      //const std::string& res = env[this->val]->eval(env);
+      //this->closure = env[this->val]->closure;
+      //return res;
+      return env[this->val]->eval(env);
     }
   else if(this->type == Atom::String)
-    return this->val.substr(1, this->val.size()-2);
+    {
+      std::shared_ptr<Cell> res(new Atom());
+      *res = *this;
+      res->val = this->val.substr(1, this->val.size()-2); 
+      return res;//this->val.substr(1, this->val.size()-2);
+    }
   else if(this->val.front() == '\'')
-    return this->val.substr(1, this->val.size()-1);
+    {
+      std::shared_ptr<Cell> res(new Atom());
+      *res = *this;
+      res->val = this->val.substr(1, this->val.size()-1); 
+      return res; //this->val.substr(1, this->val.size()-1);
+    }
   else
-    return this->val;
+    {
+      std::shared_ptr<Cell> res(new Atom());
+      *res = *this;
+      return res;//this->val;
+    }
 }
 
 void Sexp::print() const
@@ -174,53 +219,82 @@ void Sexp::print() const
      std::cout << "]"<< std::endl;
 }
 
-std::string Sexp::eval() const
+std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 {
   std::shared_ptr<Cell> cl = this->cells[0];
 
   if(cl->val.compare("concat") == 0)
-    std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){this->val += cell->eval();}); 
+    {
+      std::shared_ptr<Cell> res(new Atom());
+      std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){res->val += cell->eval(env)->val;}); 
+      return res;
+    }
+
   
+  if(cl->val.compare("append") == 0)
+    {
+      Sexp* sexp = new Sexp();
+      std::shared_ptr<Cell> res(sexp);
+      std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){
+	  
+	  std::shared_ptr<Sexp> sx = std::dynamic_pointer_cast<Sexp>(cell->eval(env));
+	  if(sx)
+	    std::for_each(sx->cells.begin(), sx->cells.end(), [&](std::shared_ptr<Cell> cl) {
+		sexp->cells.push_back(cl);
+	      });
+	    }); 
+      
+      return res;
+    }
+
   if(cl->val.compare("+") == 0)
     {
-      double res = 0;
-      std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){res += atof(cell->eval().c_str());});
+      std::shared_ptr<Cell> res(new Atom());
+      double sum = 0;
+      std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){sum += atof(cell->eval(env)->val.c_str());});
       std::ostringstream ss;
-      ss << res;
-      return ss.str(); 
+      ss << sum;
+      res->val = ss.str();
+      return res;
     }
   
   if(cl->val.compare("-") == 0)
     {
-      double res = atof(cells[1]->eval().c_str());
-      std::for_each(cells.begin()+2, cells.end(), [&](std::shared_ptr<Cell> cell){res -= atof(cell->eval().c_str());});
+      std::shared_ptr<Cell> res(new Atom());
+      double sum = atof(cells[1]->eval(env)->val.c_str());
+      std::for_each(cells.begin()+2, cells.end(), [&](std::shared_ptr<Cell> cell){sum -= atof(cell->eval(env)->val.c_str());});
       std::ostringstream ss;
-      ss << res;
-      return ss.str(); 
+      ss << sum;
+      res->val = ss.str();
+      return res;
     }
   
   if(cl->val.compare("*") == 0)
     {
-      double res = 1.0;
-      std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){res *= atof(cell->eval().c_str());});
+      std::shared_ptr<Cell> res(new Atom());
+      double prod = 1.0;
+      std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){prod *= atof(cell->eval(env)->val.c_str());});
       std::ostringstream ss;
-      ss << res;
-      return ss.str(); 
+      ss << prod;
+      res->val = ss.str();
+      return res;
     }
   
   if(cl->val.compare("/") == 0)
     {
-      double res = atof(cells[1]->eval().c_str());
-      std::for_each(cells.begin()+2, cells.end(), [&](std::shared_ptr<Cell> cell){res /= atof(cell->eval().c_str());});
+      std::shared_ptr<Cell> res(new Atom());
+      double quotient = atof(cells[1]->eval(env)->val.c_str());
+      std::for_each(cells.begin()+2, cells.end(), [&](std::shared_ptr<Cell> cell){quotient /= atof(cell->eval(env)->val.c_str());});
       std::ostringstream ss;
-      ss << res;
-      return ss.str(); 
+      ss << quotient;
+      res->val = ss.str();
+      return res;
     }
 
   if(cl->val.compare("progn") == 0)
     {
-      std::for_each(cells.begin()+1, cells.end()-1, [&](std::shared_ptr<Cell> cell){cell->eval();});
-      return cells.back()->eval(); 
+      std::for_each(cells.begin()+1, cells.end()-1, [&](std::shared_ptr<Cell> cell){cell->eval(env);});
+      return cells.back()->eval(env); 
     }
   
   if(cl->val.compare("setq") == 0)   
@@ -228,13 +302,48 @@ std::string Sexp::eval() const
       if(!env.find(cells[1]->val))
         env[cells[1]->val].reset(new Atom());
       
-      const std::string& res =  cells[2]->eval();
-      env[cells[1]->val]->val = res;
-      env[cells[1]->val]->closure = cells[2]->closure;
-              
+      //const std::string& res =  cells[2]->eval(env);
+      //env[cells[1]->val]->val = res;
+      //env[cells[1]->val]->closure = cells[2]->closure;
+             
+      env[cells[1]->val] = cells[2]->eval(env);
+      
+      return env[cells[1]->val];
+    }
+
+  if(cl->val.compare("list") == 0)   
+    {
+      Sexp * sexp = new Sexp();
+      std::shared_ptr<Cell> res(sexp);
+      
+      std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){sexp->cells.push_back(cell->eval(env));});
+
       return res;
     }
-  
+
+  if(cl->val.compare("let") == 0)   
+    {
+      std::shared_ptr<Sexp> vars = std::dynamic_pointer_cast<Sexp>(this->cells[1]);
+      std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(this->cells[2]);
+
+      std::map<std::string, std::shared_ptr<Cell> >* newEnv = new std::map<std::string, std::shared_ptr<Cell> >();
+      for(int vId = 0 ; vId < vars->cells.size() ; vId++) {
+	std::shared_ptr<Sexp> binding = std::dynamic_pointer_cast<Sexp>(vars->cells[vId]);
+	std::shared_ptr<Atom> label = std::dynamic_pointer_cast<Atom>(binding->cells[0]);
+	std::shared_ptr<Atom> value = std::dynamic_pointer_cast<Atom>(binding->cells[1]);
+
+	(*newEnv)[label->val].reset(new Atom());
+	
+	const std::shared_ptr<Cell> res =  value->eval(env);
+	(*newEnv)[label->val] = res;
+      }
+
+      env.addEnvMap(newEnv);
+      std::shared_ptr<Cell> res = body->eval(env);
+      env.removeEnv();
+      return res;
+    }
+
   if(cl->val.compare("defun") == 0)   
     {
       std::shared_ptr<Atom> fname = std::dynamic_pointer_cast<Atom>(this->cells[1]); //weak
@@ -243,30 +352,28 @@ std::string Sexp::eval() const
       
       if(args && body)
         {
-          fname->closure = [args, body, fname](std::vector<std::shared_ptr<Cell> > cls) {
+          fname->closure = [env, args, body, fname](std::vector<std::shared_ptr<Cell> > cls) mutable {
 
             //assert(cls.size() == args->cells.size());
             std::map<std::string, std::shared_ptr<Cell> > newEnv;
             for(int c = 0 ; c < cls.size() ; c++)
-              newEnv[args->cells[c]->val] = cls[c];
-
-            env.addEnvMap(newEnv);
-            std::string res = body->eval();
-            env.removeEnv();
+		newEnv[args->cells[c]->val] = cls[c];
+	    
+	    env.addEnvMap(&newEnv);
+            std::shared_ptr<Cell> res = body->eval(env);
+	    env.removeEnv();
 
             return res;
           };
         }
-      env[fname->val] = fname;
-      return "Defined " + fname->val;
+      env.top[fname->val] = fname;
+      return env.top[fname->val];
     }
 
- if(cl->val.compare("printenv") == 0)   
+
+  if(cl->val.compare("printenv") == 0)   
     {
-      std::stringstream ss;
-      ss << std::endl;
-      //      std::for_each(env.begin(), env.end(), [&](std::pair<std::string, std::shared_ptr<Cell> > p){ss << p.first << " -> " << p.second->val << std::endl;});
-      return ss.str();
+      
     }
 
   
@@ -277,35 +384,38 @@ std::string Sexp::eval() const
       std::shared_ptr<Sexp> body =  std::dynamic_pointer_cast<Sexp>(this->cells[2]);
       
       if(args && body) {
-          this->closure = [body, args](std::vector<std::shared_ptr<Cell> > cls) {
-            
-            //assert(cls.size() == args->cells.size());
-            std::map<std::string, std::shared_ptr<Cell> > newEnv;
-            for(int c = 0 ; c < cls.size() ; c++)
-              newEnv[args->cells[c]->val] = cls[c];
-            
-            env.addEnvMap(newEnv);
-            std::string res = body->eval();
-            env.removeEnv();
-            return res;
-          };
-        }
+	this->closure = [env,body, args](std::vector<std::shared_ptr<Cell> > cls) mutable {
+	  //assert(cls.size() == args->cells.size());
+	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
+	  for(int c = 0 ; c < cls.size() ; c++)
+	    newEnv[args->cells[c]->val] = cls[c];
+	  
+	  env.addEnvMap(&newEnv);
+	  std::shared_ptr<Cell> res = body->eval(env);
+	  env.removeEnv();
+	  return res;
+	};
+      }
       
-      return "closure";
+      
+      std::shared_ptr<Cell> res(new Atom());
+      res->val = "closure";
+      res->closure = this->closure;
+
+      return res;
     }
   
   if(cl->val.compare("funcall") == 0) {
       std::shared_ptr<Cell> lambda =  std::dynamic_pointer_cast<Cell>(this->cells[1]);
-      lambda->eval();
-      return  lambda->closure(std::vector<std::shared_ptr<Cell> > (this->cells.begin()+2, this->cells.end()));
+      
+      return  lambda->eval(env)->closure(std::vector<std::shared_ptr<Cell> > (this->cells.begin()+2, this->cells.end()));
     }
 
 
   if(env.find(cl->val))
     return  env[cl->val]->closure( std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
 
-  
-  return this->val;
+  return std::shared_ptr<Cell>(new Atom());
   
 }
 
@@ -383,19 +493,19 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
 
 int main(int argc, char* argv[])
 {
-     std::ifstream in(argv[1]);
-     
-    while(!in.eof())
-     {                              
-       std::shared_ptr<Sexp> sexp = parse(in);
-       if(sexp)
-         {
-           sexp->print();
-           std::cout << "-> " << sexp->eval() << std::endl;
-         }
-          else
-               break;
-     }
-     
-     return 0;
+  std::ifstream in(argv[1]);
+  Cell::CellEnv env;     
+  while(!in.eof())
+    {                              
+      std::shared_ptr<Sexp> sexp = parse(in);
+      if(sexp)
+	{
+	  sexp->print();
+	  std::cout << "-> " << *sexp->eval(env) << std::endl;
+	}
+      else
+	break;
+    }
+  
+  return 0;
 }
