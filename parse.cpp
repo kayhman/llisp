@@ -130,6 +130,8 @@ std::ostream& operator<< (std::ostream& stream, const Cell& cell)
  
   if(sexp)
        stream << *sexp;
+
+  return stream;
 }
 
 std::ostream& operator<< (std::ostream& stream, const Sexp& cell)
@@ -137,11 +139,14 @@ std::ostream& operator<< (std::ostream& stream, const Sexp& cell)
   stream << "(";
   std::for_each(cell.cells.begin(), cell.cells.end(), [&](std::shared_ptr<Cell> cell){stream << cell->val << " ";}); 
   stream << ")";
+
+  return stream;
 }
 
 std::ostream& operator<< (std::ostream& stream, const Atom& atom)
 {
   stream << atom.val;
+  return stream;
 }
 
 void Atom::print() const
