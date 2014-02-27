@@ -9,9 +9,10 @@
 #include <functional>
 #include <fstream>
 #include <memory>
+#include <regex>
 
 bool isoperator(char c) {
-     std::string const valid_chars = "+*-/!=<>\"'`";
+     std::string const valid_chars = "+*-/!=<>\"'`,";
      return valid_chars.find(c) != std::string::npos;
 }
 
@@ -368,6 +369,56 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
             std::shared_ptr<Cell> res = body->eval(env);
 	    env.removeEnv();
 
+            return res;
+          };
+        }
+      env.top[fname->val] = fname;
+      return env.top[fname->val];
+    }
+  
+  if(cl->val.compare("defmacro") == 0)   
+    {
+      std::shared_ptr<Atom> fname = std::dynamic_pointer_cast<Atom>(this->cells[1]); //weak
+      std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(this->cells[2]); //weak
+      std::shared_ptr<Cell> body = this->cells[3];
+      
+      if(args && body)
+        {
+          std::cout << "create macro" << std::endl;
+          fname->closure = [env, args, body, fname](std::vector<std::shared_ptr<Cell> > cls) mutable {
+            std::cout << "call macro" << std::endl;
+            //assert(cls.size() == args->cells.size());
+
+            std::stringstream ss;
+
+            std::function<void(std::shared_ptr<Cell>, std::regex re, std::string s)> recursiveReplace = [&](std::shared_ptr<Cell> cell, std::regex re, std::string s)
+            {
+              std::shared_ptr<Sexp> sexp = std::dynamic_pointer_cast<Sexp>(cell); //weak
+              std::shared_ptr<Atom> atom = std::dynamic_pointer_cast<Atom>(cell); //weak
+              if(sexp)
+                std::for_each(sexp->cells.begin(), sexp->cells.end(), [&](std::shared_ptr<Cell> cell){recursiveReplace(cell, re, s);});
+              if(atom)
+                atom->val = regex_replace(atom->val, re, s);
+                };
+
+            for(int c = 0 ; c < cls.size() ; c++)
+              {
+                ss.str("");
+                std::string var;
+                ss << *cls[c];
+
+
+                var = ss.str();
+                ss.str("");
+                ss << "," << *args->cells[c];
+                std::regex re(ss.str());
+
+                recursiveReplace(body, re, var);
+              }
+            std::cout << "test body -> " << *body << std::endl;
+            
+            std::shared_ptr<Cell> res;
+	                
             return res;
           };
         }
