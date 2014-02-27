@@ -137,7 +137,7 @@ std::ostream& operator<< (std::ostream& stream, const Cell& cell)
 std::ostream& operator<< (std::ostream& stream, const Sexp& cell)
 {
   stream << "(";
-  std::for_each(cell.cells.begin(), cell.cells.end(), [&](std::shared_ptr<Cell> cell){stream << cell->val << " ";}); 
+  std::for_each(cell.cells.begin(), cell.cells.end(), [&](std::shared_ptr<Cell> cell){stream << *cell << " ";}); 
   stream << ")";
 
   return stream;
