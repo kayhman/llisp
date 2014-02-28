@@ -38,7 +38,7 @@ struct Cell
 {
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
-  mutable std::function<std::shared_ptr<Cell>(std::vector<std::shared_ptr<Cell> >)> closure;
+  mutable std::function<std::shared_ptr<Cell>(Cell* self, std::vector<std::shared_ptr<Cell> >)> closure;
   mutable std::string val;
 
   virtual void print() const = 0;
@@ -358,7 +358,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       
       if(args && body)
         {
-          fname->closure = [env, args, body, fname](std::vector<std::shared_ptr<Cell> > cls) mutable {
+          fname->closure = [env, args, body, fname](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
 
             //assert(cls.size() == args->cells.size());
             std::map<std::string, std::shared_ptr<Cell> > newEnv;
@@ -384,9 +384,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       
       if(args && body)
         {
-          std::cout << "create macro" << std::endl;
-          fname->closure = [env, args, body, fname](std::vector<std::shared_ptr<Cell> > cls) mutable {
-            std::cout << "call macro" << std::endl;
+          fname->closure = [env, args, body, fname](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
             //assert(cls.size() == args->cells.size());
 
             std::stringstream ss;
@@ -415,9 +413,14 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 
                 recursiveReplace(body, re, var);
               }
-            std::cout << "test body -> " << *body << std::endl;
-            
-            std::shared_ptr<Cell> res;
+	    
+	    Sexp* selfx = dynamic_cast<Sexp*>(self); //weak
+	    std::shared_ptr<Sexp> bodyx = std::dynamic_pointer_cast<Sexp>(body); //weak
+	    if(selfx && bodyx)
+	      selfx->cells = bodyx->cells;
+	    std::cout << "macro expansion" << std::endl;
+	    
+            std::shared_ptr<Cell> res = body->eval(env);
 	                
             return res;
           };
@@ -440,7 +443,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       std::shared_ptr<Sexp> body =  std::dynamic_pointer_cast<Sexp>(this->cells[2]);
       
       if(args && body) {
-	this->closure = [env,body, args](std::vector<std::shared_ptr<Cell> > cls) mutable {
+	this->closure = [env,body, args](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
 	  //assert(cls.size() == args->cells.size());
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	  for(int c = 0 ; c < cls.size() ; c++)
@@ -462,14 +465,14 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
     }
   
   if(cl->val.compare("funcall") == 0) {
-      std::shared_ptr<Cell> lambda =  std::dynamic_pointer_cast<Cell>(this->cells[1]);
-      
-      return  lambda->eval(env)->closure(std::vector<std::shared_ptr<Cell> > (this->cells.begin()+2, this->cells.end()));
+    std::shared_ptr<Cell> lambda =  std::dynamic_pointer_cast<Cell>(this->cells[1])->eval(env);
+    
+    return  lambda->closure(lambda.get(), std::vector<std::shared_ptr<Cell> > (this->cells.begin()+2, this->cells.end()));
     }
 
 
   if(env.find(cl->val))
-    return  env[cl->val]->closure( std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
+    return  env[cl->val]->closure(this, std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
 
   return std::shared_ptr<Cell>(new Atom());
   
