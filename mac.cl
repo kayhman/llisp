@@ -1,4 +1,4 @@
-(defmacro copy (a) ,a)
+(defmacro copy (a) `,a)
 
 (copy 12)
 

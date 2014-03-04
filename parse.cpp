@@ -180,31 +180,19 @@ void Atom::computeVal(const std::string& code) const
 std::shared_ptr<Cell> Atom::eval(CellEnv& env)
 {
   if(this->type == Atom::Symbol &&  env.find(this->val))
-    {
-      //const std::string& res = env[this->val]->eval(env);
-      //this->closure = env[this->val]->closure;
-      //return res;
       return env[this->val]->eval(env);
-    }
   else if(this->type == Atom::String)
     {
       std::shared_ptr<Cell> res(new Atom());
       *res = *this;
       res->val = this->val.substr(1, this->val.size()-2); 
-      return res;//this->val.substr(1, this->val.size()-2);
-    }
-  else if(this->val.front() == '\'')
-    {
-      std::shared_ptr<Cell> res(new Atom());
-      *res = *this;
-      res->val = this->val.substr(1, this->val.size()-1); 
-      return res; //this->val.substr(1, this->val.size()-1);
+      return res;
     }
   else
     {
       std::shared_ptr<Cell> res(new Atom());
       *res = *this;
-      return res;//this->val;
+      return res;
     }
 }
 
@@ -297,6 +285,11 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       return res;
     }
 
+  if(cl->val.compare("quote") == 0)
+    {
+      return cells[1];
+    }
+
   if(cl->val.compare("progn") == 0)
     {
       std::for_each(cells.begin()+1, cells.end()-1, [&](std::shared_ptr<Cell> cell){cell->eval(env);});
@@ -308,10 +301,6 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       if(!env.find(cells[1]->val))
         env[cells[1]->val].reset(new Atom());
       
-      //const std::string& res =  cells[2]->eval(env);
-      //env[cells[1]->val]->val = res;
-      //env[cells[1]->val]->closure = cells[2]->closure;
-             
       env[cells[1]->val] = cells[2]->eval(env);
       
       return env[cells[1]->val];
@@ -382,6 +371,9 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(this->cells[2]); //weak
       std::shared_ptr<Cell> body = this->cells[3];
       
+      std::cout << "macro body " << *body << std::endl;
+      std::cout << "macro args " << *args << std::endl;
+
       if(args && body)
         {
           fname->closure = [env, args, body, fname](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
@@ -391,16 +383,29 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 
             std::function<void(std::shared_ptr<Cell>, std::regex re, std::string s)> recursiveReplace = [&](std::shared_ptr<Cell> cell, std::regex re, std::string s)
             {
-              std::shared_ptr<Sexp> sexp = std::dynamic_pointer_cast<Sexp>(cell); //weak
-              std::shared_ptr<Atom> atom = std::dynamic_pointer_cast<Atom>(cell); //weak
-              if(sexp)
-                std::for_each(sexp->cells.begin(), sexp->cells.end(), [&](std::shared_ptr<Cell> cell){recursiveReplace(cell, re, s);});
+              std::shared_ptr<Sexp> sexp = std::dynamic_pointer_cast<Sexp>(cell);
+              std::shared_ptr<Atom> atom = std::dynamic_pointer_cast<Atom>(cell);
+              std::cout << "macro cro" << std::endl;
+               if(sexp)
+                {
+                  std::cout << "handle " << *sexp << std::endl;
+                  if(sexp->cells.size() > 0)
+                    {
+                 
+                      if(sexp->cells[0]->val.compare("backquote") == 0)
+                        {
+                          std::cout << "handle backquote" << std::endl;
+                          std::for_each(sexp->cells.begin(), sexp->cells.end(), [&](std::shared_ptr<Cell> cell){recursiveReplace(cell, re, s);});
+                        }
+                    }
+                }
               if(atom)
                 atom->val = regex_replace(atom->val, re, s);
-                };
+            };
 
             for(int c = 0 ; c < cls.size() ; c++)
               {
+              std::cout << "args " << std::endl;
                 ss.str("");
                 std::string var;
                 ss << *cls[c];
@@ -488,6 +493,7 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
   
      char ch;
      std::string buffer;
+     bool quoting = false;
      for(int cc = 0 ;  ; ++cc)
      {
           ss >> std::noskipws >> ch;
@@ -539,7 +545,40 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
       
           if(isalnum(ch) || isoperator(ch) || ch == '.')
           {
-               buffer.push_back(ch);
+            if(ch == '\'')
+              {
+                std::shared_ptr<Sexp> sx(new Sexp());
+                if(sexps.size())
+                  sexp->cells.push_back(sx);
+                sexp = sx;
+                sexps.push_back(sx);
+                
+                curTok.computeType("quote");
+                curTok.computeVal("quote");
+                std::shared_ptr<Atom> at(new Atom());
+                *at = curTok;
+                
+                sexp->cells.push_back(at);
+                newToken = true;
+                quot
+              } else if(ch == '`')
+              {
+                std::shared_ptr<Sexp> sx(new Sexp());
+                if(sexps.size())
+                  sexp->cells.push_back(sx);
+                sexp = sx;
+                sexps.push_back(sx);
+                
+                curTok.computeType("backquote");
+                curTok.computeVal("backquote");
+                std::shared_ptr<Atom> at(new Atom());
+                *at = curTok;
+                
+                sexp->cells.push_back(at);
+               newToken = true;
+              }
+            else
+              buffer.push_back(ch);
           }
 
           if((sexps.size() == 0 && sexp != NULL) 
@@ -559,7 +598,8 @@ int main(int argc, char* argv[])
       std::shared_ptr<Sexp> sexp = parse(in);
       if(sexp)
 	{
-	  sexp->print();
+          sexp->print();
+          //          std::cout << *sexp << std::endl;
 	  std::cout << "-> " << *sexp->eval(env) << std::endl;
 	}
       else
