@@ -36,6 +36,7 @@ public:
 
 struct Cell
 {
+  enum Quoting {AtomQ, SexpQ, NoneQ};
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
   mutable std::function<std::shared_ptr<Cell>(Cell* self, std::vector<std::shared_ptr<Cell> >)> closure;
@@ -243,6 +244,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 
   if(cl->val.compare("+") == 0)
     {
+      std::cout << "call +" << std::endl; 
       std::shared_ptr<Cell> res(new Atom());
       double sum = 0;
       std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){sum += atof(cell->eval(env)->val.c_str());});
@@ -285,10 +287,12 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       return res;
     }
 
-  if(cl->val.compare("quote") == 0)
+  if(cl->val.compare("quote") == 0 ||
+     cl->val.compare("backquote") == 0 )
     {
       return cells[1];
     }
+
 
   if(cl->val.compare("progn") == 0)
     {
@@ -371,9 +375,6 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(this->cells[2]); //weak
       std::shared_ptr<Cell> body = this->cells[3];
       
-      std::cout << "macro body " << *body << std::endl;
-      std::cout << "macro args " << *args << std::endl;
-
       if(args && body)
         {
           fname->closure = [env, args, body, fname](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
@@ -381,31 +382,31 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 
             std::stringstream ss;
 
-            std::function<void(std::shared_ptr<Cell>, std::regex re, std::string s)> recursiveReplace = [&](std::shared_ptr<Cell> cell, std::regex re, std::string s)
+            std::function<std::shared_ptr<Cell>(std::shared_ptr<Cell>, std::regex re, std::string s)> recursiveReplace = [&](std::shared_ptr<Cell> cell, std::regex re, std::string s)
             {
               std::shared_ptr<Sexp> sexp = std::dynamic_pointer_cast<Sexp>(cell);
               std::shared_ptr<Atom> atom = std::dynamic_pointer_cast<Atom>(cell);
-              std::cout << "macro cro" << std::endl;
+
                if(sexp)
                 {
-                  std::cout << "handle " << *sexp << std::endl;
-                  if(sexp->cells.size() > 0)
+		  if(sexp->cells.size() > 0)
                     {
-                 
+		      std::shared_ptr<Sexp> newS(new Sexp());
+		      std::for_each(sexp->cells.begin(), sexp->cells.end(), [&](std::shared_ptr<Cell> cell){ newS->cells.push_back(recursiveReplace(cell, re, s));});
+		      
                       if(sexp->cells[0]->val.compare("backquote") == 0)
-                        {
-                          std::cout << "handle backquote" << std::endl;
-                          std::for_each(sexp->cells.begin(), sexp->cells.end(), [&](std::shared_ptr<Cell> cell){recursiveReplace(cell, re, s);});
-                        }
+			return newS->eval(env);
+		      else
+			return std::dynamic_pointer_cast<Cell>(newS);
                     }
-                }
-              if(atom)
-                atom->val = regex_replace(atom->val, re, s);
+                } else if(atom)
+		 {
+		   atom->val = regex_replace(atom->val, re, s);
+		   return atom->eval(env);
+		 }
             };
-
             for(int c = 0 ; c < cls.size() ; c++)
               {
-              std::cout << "args " << std::endl;
                 ss.str("");
                 std::string var;
                 ss << *cls[c];
@@ -415,15 +416,14 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
                 ss.str("");
                 ss << "," << *args->cells[c];
                 std::regex re(ss.str());
-
-                recursiveReplace(body, re, var);
+                body = recursiveReplace(body, re, var);
               }
 	    
 	    Sexp* selfx = dynamic_cast<Sexp*>(self); //weak
 	    std::shared_ptr<Sexp> bodyx = std::dynamic_pointer_cast<Sexp>(body); //weak
 	    if(selfx && bodyx)
 	      selfx->cells = bodyx->cells;
-	    std::cout << "macro expansion" << std::endl;
+	    std::cout << "macro expansion " << *body << std::endl;
 	    
             std::shared_ptr<Cell> res = body->eval(env);
 	                
@@ -493,7 +493,8 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
   
      char ch;
      std::string buffer;
-     bool quoting = false;
+     Cell::Quoting quoting = Cell::NoneQ;
+     Cell::Quoting backquoting = Cell::NoneQ;
      for(int cc = 0 ;  ; ++cc)
      {
           ss >> std::noskipws >> ch;
@@ -506,8 +507,14 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
                    sexp->cells.push_back(sx);
                  sexp = sx;
                  sexps.push_back(sx);
-               }
-
+		 if(quoting == Cell::AtomQ)
+		   quoting = Cell::SexpQ;
+		 if(backquoting == Cell::AtomQ)
+		   {
+		std::cout << "promote bq" << std::endl;
+		     backquoting = Cell::SexpQ;
+		   }
+	       }
 
                newToken = true;
 	  
@@ -518,14 +525,46 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
 	      
                     std::shared_ptr<Atom> at(new Atom());
                     *at = curTok;
-	      
-                    sexp->cells.push_back(at);
+		    
+		    if(quoting == Cell::AtomQ || backquoting == Cell::AtomQ)
+		      {
+			std::shared_ptr<Sexp> sx(new Sexp());
+			std::shared_ptr<Atom> quote(new Atom());
+			quote->computeType(quoting == Cell::AtomQ ? "quote" : "backquote");
+			quote->computeVal(quoting == Cell::AtomQ ? "quote" : "backquote");
+		    
+			sx->cells.push_back(quote);
+			sx->cells.push_back(at);
+			sexp->cells.push_back(sx);
+			quoting = Cell::NoneQ;
+			backquoting = Cell::NoneQ;
+		      }
+		    else
+		      sexp->cells.push_back(at);
 
                     buffer.resize(0);
                }
 
                if(ch == ')')
                {
+		 if(quoting == Cell::SexpQ || backquoting == Cell::SexpQ)
+		   {
+		     std::shared_ptr<Sexp> sx(new Sexp());
+		     std::shared_ptr<Atom> quote(new Atom());
+		     quote->computeType(quoting == Cell::SexpQ ? "quote" : "backquote");
+		     quote->computeVal(quoting == Cell::SexpQ ? "quote" : "backquote");
+
+		     sx->cells = sexps.back()->cells;
+		     sexps.back()->cells.resize(0);
+		     sexps.back()->cells.push_back(quote);
+		     sexps.back()->cells.push_back(sx);
+
+		     std::cout << "do bq " << *sexps.back() << std::endl;
+		     quoting = Cell::NoneQ;
+		     backquoting = Cell::NoneQ;
+		   }
+
+
                     if(sexps.size() > 1)
                     {
                          sexps.pop_back();
@@ -546,37 +585,12 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
           if(isalnum(ch) || isoperator(ch) || ch == '.')
           {
             if(ch == '\'')
-              {
-                std::shared_ptr<Sexp> sx(new Sexp());
-                if(sexps.size())
-                  sexp->cells.push_back(sx);
-                sexp = sx;
-                sexps.push_back(sx);
-                
-                curTok.computeType("quote");
-                curTok.computeVal("quote");
-                std::shared_ptr<Atom> at(new Atom());
-                *at = curTok;
-                
-                sexp->cells.push_back(at);
-                newToken = true;
-                quot
-              } else if(ch == '`')
-              {
-                std::shared_ptr<Sexp> sx(new Sexp());
-                if(sexps.size())
-                  sexp->cells.push_back(sx);
-                sexp = sx;
-                sexps.push_back(sx);
-                
-                curTok.computeType("backquote");
-                curTok.computeVal("backquote");
-                std::shared_ptr<Atom> at(new Atom());
-                *at = curTok;
-                
-                sexp->cells.push_back(at);
-               newToken = true;
-              }
+	      quoting = Cell::AtomQ;
+	    else if(ch == '`')
+	      {
+		std::cout << "bq" << std::endl;
+              backquoting = Cell::AtomQ;
+	      }
             else
               buffer.push_back(ch);
           }
@@ -599,7 +613,7 @@ int main(int argc, char* argv[])
       if(sexp)
 	{
           sexp->print();
-          //          std::cout << *sexp << std::endl;
+          std::cout << *sexp << std::endl;
 	  std::cout << "-> " << *sexp->eval(env) << std::endl;
 	}
       else
