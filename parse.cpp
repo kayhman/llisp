@@ -36,11 +36,13 @@ public:
 
 struct Cell
 {
-  enum Quoting {AtomQ, SexpQ, NoneQ};
+  enum Quoting {Quote, BackQuote, NoneQ};
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
+  Cell() :quoting(NoneQ) {};
   mutable std::function<std::shared_ptr<Cell>(Cell* self, std::vector<std::shared_ptr<Cell> >)> closure;
   mutable std::string val;
+  Quoting quoting;
 
   virtual void print() const = 0;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
@@ -94,8 +96,6 @@ bool Env<Key, Val>::find (const Key& k)
 	return true;
   return false;
 }
-
-//template class Env<std::string, std::shared_ptr<Cell> >;
 
 struct Sexp : public Cell
 {
@@ -244,7 +244,6 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 
   if(cl->val.compare("+") == 0)
     {
-      std::cout << "call +" << std::endl; 
       std::shared_ptr<Cell> res(new Atom());
       double sum = 0;
       std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){sum += atof(cell->eval(env)->val.c_str());});
@@ -494,7 +493,6 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
      char ch;
      std::string buffer;
      Cell::Quoting quoting = Cell::NoneQ;
-     Cell::Quoting backquoting = Cell::NoneQ;
      for(int cc = 0 ;  ; ++cc)
      {
           ss >> std::noskipws >> ch;
@@ -507,13 +505,11 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
                    sexp->cells.push_back(sx);
                  sexp = sx;
                  sexps.push_back(sx);
-		 if(quoting == Cell::AtomQ)
-		   quoting = Cell::SexpQ;
-		 if(backquoting == Cell::AtomQ)
-		   {
-		std::cout << "promote bq" << std::endl;
-		     backquoting = Cell::SexpQ;
-		   }
+		 if(quoting == Cell::Quote)
+		   sexp->quoting = Cell::Quote;
+		 if(quoting == Cell::BackQuote)
+		   sexp->quoting = Cell::BackQuote;
+		 quoting = Cell::NoneQ;
 	       }
 
                newToken = true;
@@ -526,18 +522,17 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
                     std::shared_ptr<Atom> at(new Atom());
                     *at = curTok;
 		    
-		    if(quoting == Cell::AtomQ || backquoting == Cell::AtomQ)
+		    if(quoting != Cell::NoneQ)
 		      {
 			std::shared_ptr<Sexp> sx(new Sexp());
 			std::shared_ptr<Atom> quote(new Atom());
-			quote->computeType(quoting == Cell::AtomQ ? "quote" : "backquote");
-			quote->computeVal(quoting == Cell::AtomQ ? "quote" : "backquote");
+			quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
+			quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
 		    
 			sx->cells.push_back(quote);
 			sx->cells.push_back(at);
 			sexp->cells.push_back(sx);
 			quoting = Cell::NoneQ;
-			backquoting = Cell::NoneQ;
 		      }
 		    else
 		      sexp->cells.push_back(at);
@@ -547,21 +542,17 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
 
                if(ch == ')')
                {
-		 if(quoting == Cell::SexpQ || backquoting == Cell::SexpQ)
+		 if(sexp->quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx(new Sexp());
 		     std::shared_ptr<Atom> quote(new Atom());
-		     quote->computeType(quoting == Cell::SexpQ ? "quote" : "backquote");
-		     quote->computeVal(quoting == Cell::SexpQ ? "quote" : "backquote");
+		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : "backquote");
+		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 
 		     sx->cells = sexps.back()->cells;
 		     sexps.back()->cells.resize(0);
 		     sexps.back()->cells.push_back(quote);
 		     sexps.back()->cells.push_back(sx);
-
-		     std::cout << "do bq " << *sexps.back() << std::endl;
-		     quoting = Cell::NoneQ;
-		     backquoting = Cell::NoneQ;
 		   }
 
 
@@ -576,6 +567,7 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
                          sexps.pop_back();
                     }
                }
+	       quoting = Cell::NoneQ;
           }
           else if((isalnum(ch) || isoperator(ch)) && newToken)
           {
@@ -585,12 +577,9 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
           if(isalnum(ch) || isoperator(ch) || ch == '.')
           {
             if(ch == '\'')
-	      quoting = Cell::AtomQ;
+	      quoting = Cell::Quote;
 	    else if(ch == '`')
-	      {
-		std::cout << "bq" << std::endl;
-              backquoting = Cell::AtomQ;
-	      }
+              quoting = Cell::BackQuote;
             else
               buffer.push_back(ch);
           }
@@ -612,8 +601,8 @@ int main(int argc, char* argv[])
       std::shared_ptr<Sexp> sexp = parse(in);
       if(sexp)
 	{
-          sexp->print();
-          std::cout << *sexp << std::endl;
+	  //          sexp->print();
+          std::cout << "> " << *sexp << std::endl;
 	  std::cout << "-> " << *sexp->eval(env) << std::endl;
 	}
       else
