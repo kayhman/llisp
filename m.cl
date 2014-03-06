@@ -14,3 +14,10 @@
 
 
 (copypy 12 13)
+
+(defun mymy (a b)
+	(copypy a b))
+
+(mymy 12 13)
+(mymy 12 13)
+(mymy 12 13)
