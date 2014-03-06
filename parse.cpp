@@ -223,13 +223,9 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
   
   if(cl->val.compare("-") == 0)
     {
-      std::cout << "call - " << *this << std::endl;
       std::shared_ptr<Cell> res(new Atom());
-      std::cout << "call - 0 " << *cells[1] << std::endl;
       double sum = atof(cells[1]->eval(env)->val.c_str());
-      std::cout << "call - 1" << std::endl;
       std::for_each(cells.begin()+2, cells.end(), [&](std::shared_ptr<Cell> cell){sum -= atof(cell->eval(env)->val.c_str());});
-      std::cout << "call - 2" << std::endl;
 
       std::ostringstream ss;
       ss << sum;
@@ -354,21 +350,17 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       if(args && body)
         {
           fname->closure = [env, args, body, fname](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
-            std::cout << "call close" << std::endl;
             //assert(cls.size() == args->cells.size());
             std::map<std::string, std::shared_ptr<Cell> > newEnv;
             for(int c = 0 ; c < cls.size() ; c++)
-		newEnv[args->cells[c]->val] = cls[c];
+              newEnv[args->cells[c]->val] = cls[c]->eval(env); // Eval args before adding them to env (avoir infinite loop when defining recursive function)
 	    
             //handle recursive call
             newEnv[fname->val] = fname;
 
 	    env.addEnvMap(&newEnv);
-            std::cout << "call close 1" << std::endl;
             std::shared_ptr<Cell> res = body->eval(env);
-            std::cout << "call close 2" << std::endl;
 	    env.removeEnv();
-            std::cout << "call close 3" << std::endl;
             return res;
           };
         }
