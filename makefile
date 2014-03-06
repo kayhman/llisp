@@ -7,7 +7,7 @@ CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -g
 
 all: elisp macro
 
-elisp: parse.cpp 
+elisp: cell.cpp core.cpp  string.cpp parse.cpp
 	clear
 	$(CPP) $(CFLAGS) -o $@ $?
 
