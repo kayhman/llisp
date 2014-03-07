@@ -2,6 +2,7 @@
 #include "cell.h"
 #include "string.h"
 #include "core.h"
+#include "functional.h"
 
 
 std::shared_ptr<Sexp> parse(std::istream& ss)
@@ -118,8 +119,9 @@ int main(int argc, char* argv[])
 {
   std::ifstream in(argv[1]);
   Cell::CellEnv env; 
-  registerStringHandlers();
   registerCoreHandlers();
+  registerFunctionalHandlers();
+  registerStringHandlers();
 
   while(!in.eof())
     {                              

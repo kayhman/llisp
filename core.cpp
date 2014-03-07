@@ -86,4 +86,34 @@ void registerCoreHandlers()
     std::for_each(sexp->cells.begin()+1, sexp->cells.end()-1, [&](std::shared_ptr<Cell> cell){cell->eval(env);});
     return sexp->cells.back()->eval(env);
   };
+
+  env.evalHandlers["setq"] = [](Sexp* sexp, Cell::CellEnv& env) {
+    if(!env.find(sexp->cells[1]->val))
+      env[sexp->cells[1]->val].reset(new Atom());
+    env[sexp->cells[1]->val] = sexp->cells[2]->eval(env);
+    return env[sexp->cells[1]->val];
+  };
+
+  env.evalHandlers["let"] = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Sexp> vars = std::dynamic_pointer_cast<Sexp>(sexp->cells[1]);
+    std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]);
+    
+    std::map<std::string, std::shared_ptr<Cell> >* newEnv = new std::map<std::string, std::shared_ptr<Cell> >();
+    for(int vId = 0 ; vId < vars->cells.size() ; vId++) {
+      std::shared_ptr<Sexp> binding = std::dynamic_pointer_cast<Sexp>(vars->cells[vId]);
+      std::shared_ptr<Atom> label = std::dynamic_pointer_cast<Atom>(binding->cells[0]);
+      std::shared_ptr<Atom> value = std::dynamic_pointer_cast<Atom>(binding->cells[1]);
+      
+      (*newEnv)[label->val].reset(new Atom());
+      
+      const std::shared_ptr<Cell> res =  value->eval(env);
+      (*newEnv)[label->val] = res;
+    }
+    
+    env.addEnvMap(newEnv);
+    std::shared_ptr<Cell> res = body->eval(env);
+    env.removeEnv();
+    return res;
+  };
+  
 }

@@ -18,4 +18,11 @@ void registerListHandlers()
     
     return res;
   };
+  
+  env.evalHandlers["list"] = [](Sexp* sexp, Cell::CellEnv& env) {
+    Sexp * sexp = new Sexp();
+    std::shared_ptr<Cell> res(sexp);
+    std::for_each(cells.begin()+1, cells.end(), [&](std::shared_ptr<Cell> cell){sexp->cells.push_back(cell->eval(env));});
+    return res;
+  };
 }
