@@ -33,9 +33,8 @@ struct Cell
 struct Sexp : public Cell
 {
   std::vector<std::shared_ptr<Cell> > cells;
-  
+  virtual ~Sexp() {};
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
-
   friend std::ostream& operator<< (std::ostream& stream, const Sexp& cell);
 };
 
@@ -44,7 +43,7 @@ struct Atom : public Cell
 {
   enum Type {Symbol, Real, String, Closure};
   Type type;
-  
+  virtual ~Atom() {};  
   void computeType(const std::string& code);
   void computeVal(const std::string& code) const;
   virtual std::shared_ptr<Cell> eval(CellEnv& env);

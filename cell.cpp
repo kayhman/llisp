@@ -59,14 +59,14 @@ std::shared_ptr<Cell> Atom::eval(CellEnv& env)
       return env[this->val]->eval(env);
   else if(this->type == Atom::String)
     {
-      std::shared_ptr<Cell> res(new Atom());
+      std::shared_ptr<Cell> res(new Atom);
       *res = *this;
       res->val = this->val.substr(1, this->val.size()-2); 
       return res;
     }
   else
     {
-      std::shared_ptr<Cell> res(new Atom());
+      std::shared_ptr<Cell> res(new Atom);
       *res = *this;
       return res;
     }
@@ -87,7 +87,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
   if(env.find(cl->val))
     return  env[cl->val]->closure(this, std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
 
-  return std::shared_ptr<Cell>(new Atom());  
+  return std::shared_ptr<Cell>(new Atom);  
 }
 
 template class  Env<std::string,std::shared_ptr<Cell> >;

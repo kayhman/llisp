@@ -8,7 +8,6 @@
 std::shared_ptr<Sexp> parse(std::istream& ss)
 {
      bool newToken = false;
-     Atom curTok;
 
      std::vector<std::shared_ptr<Sexp> > sexps;
      std::shared_ptr<Sexp> sexp;
@@ -23,7 +22,7 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
           {
                if(ch == '(')
                {
-                 std::shared_ptr<Sexp> sx(new Sexp());
+                 std::shared_ptr<Sexp> sx(new Sexp);
                  if(sexps.size())
                    sexp->cells.push_back(sx);
                  sexp = sx;
@@ -39,16 +38,15 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
 	  
                if(buffer.size())
                {
-                    curTok.computeType(buffer);
-                    curTok.computeVal(buffer);
-	      
-                    std::shared_ptr<Atom> at(new Atom());
-                    *at = curTok;
-		    
-		    if(quoting != Cell::NoneQ)
+		 
+		 if(quoting != Cell::NoneQ)
 		      {
-			std::shared_ptr<Sexp> sx(new Sexp());
-			std::shared_ptr<Atom> quote(new Atom());
+			std::shared_ptr<Atom> at(new Atom);
+			at->computeType(buffer);
+			at->computeVal(buffer);
+
+			std::shared_ptr<Sexp> sx(new Sexp);
+			std::shared_ptr<Atom> quote(new Atom);
 			quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
 			quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
 		    
@@ -57,8 +55,13 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
 			sexp->cells.push_back(sx);
 			quoting = Cell::NoneQ;
 		      }
-		    else
-		      sexp->cells.push_back(at);
+		 else
+		   {
+		     std::shared_ptr<Atom> at(new Atom);
+		     at->computeType(buffer);
+		     at->computeVal(buffer);
+		     sexp->cells.push_back(at);
+		   }
 
                     buffer.resize(0);
                }
@@ -67,8 +70,8 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
                {
 		 if(sexp->quoting != Cell::NoneQ)
 		   {
-		     std::shared_ptr<Sexp> sx(new Sexp());
-		     std::shared_ptr<Atom> quote(new Atom());
+		     std::shared_ptr<Sexp> sx(new Sexp);
+		     std::shared_ptr<Atom> quote(new Atom);
 		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 
