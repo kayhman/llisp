@@ -5,7 +5,7 @@
 #include "functional.h"
 
 
-std::shared_ptr<Sexp> parse(std::istream& ss)
+std::shared_ptr<Cell> parse(std::istream& ss)
 {
      bool newToken = false;
 
@@ -38,32 +38,28 @@ std::shared_ptr<Sexp> parse(std::istream& ss)
 	  
                if(buffer.size())
                {
-		 
+		 std::shared_ptr<Atom> at(new Atom);
+		 at->computeType(buffer);
+		 at->computeVal(buffer);
+		 if(!sexps.size())
+		   return at;
+
 		 if(quoting != Cell::NoneQ)
-		      {
-			std::shared_ptr<Atom> at(new Atom);
-			at->computeType(buffer);
-			at->computeVal(buffer);
-
-			std::shared_ptr<Sexp> sx(new Sexp);
-			std::shared_ptr<Atom> quote(new Atom);
-			quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
-			quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
-		    
-			sx->cells.push_back(quote);
-			sx->cells.push_back(at);
-			sexp->cells.push_back(sx);
-			quoting = Cell::NoneQ;
-		      }
-		 else
 		   {
-		     std::shared_ptr<Atom> at(new Atom);
-		     at->computeType(buffer);
-		     at->computeVal(buffer);
-		     sexp->cells.push_back(at);
+		     std::shared_ptr<Sexp> sx(new Sexp);
+		     std::shared_ptr<Atom> quote(new Atom);
+		     quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
+		     quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
+		     
+		     sx->cells.push_back(quote);
+		     sx->cells.push_back(at);
+		     sexp->cells.push_back(sx);
+		     quoting = Cell::NoneQ;
 		   }
-
-                    buffer.resize(0);
+		 else
+		   sexp->cells.push_back(at);
+		 
+		 buffer.resize(0);
                }
 
                if(ch == ')')
@@ -128,7 +124,7 @@ int main(int argc, char* argv[])
 
   while(!in.eof())
     {                              
-      std::shared_ptr<Sexp> sexp = parse(in);
+      std::shared_ptr<Cell> sexp = parse(in);
       if(sexp)
 	{
           std::cout << "> " << *sexp << std::endl;
