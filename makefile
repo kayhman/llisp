@@ -1,18 +1,28 @@
-
 CPP=clang++
 CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -g
-#CFLAGS=-std=c++11 -stdlib=libc++ -nodefaultlibs -lc++ -lcxxrt -lm -lc -lgcc_s -lgcc -ldl
-#CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -dl
-#CFLAGS=-std=c++11 -stdlib=libc++ `llvm-config --libs core` `llvm-config --ldflags` 
 
-all: elisp macro
+all: libenvironment libcell libstring elisp
+	sudo cp libenvironment.so libcell.so /usr/local/lib
 
-elisp: functional.cpp cell.cpp core.cpp string.cpp parse.cpp
-	clear
-	$(CPP) $(CFLAGS) -o $@ $?
+clean:
+	rm -rf *.so elisp
+
+elisp: functional.cpp core.cpp parse.cpp
+	$(CPP) $(CFLAGS) -L. -lenvironment -lcell -o $@ $?
+
+libenvironment: environment.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@.so $?
+
+libcell: cell.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -L. -lenvironment -o $@.so $?
+
+libstring: string.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@.so $?
+
 
 macro: macro.cpp 
-	clear
 	$(CPP) $(CFLAGS) -o $@ $?
 
-
+loading: hello.cpp main.cpp
+	$(CPP) $(CFLAGS) -o $@ main.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o hello.so hello.cpp

@@ -1,6 +1,6 @@
 #include "environment.h"
 #include "cell.h"
-#include "string.h"
+//#include "string.h"
 #include "core.h"
 #include "functional.h"
 
@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
   Cell::CellEnv env; 
   registerCoreHandlers();
   registerFunctionalHandlers();
-  registerStringHandlers();
+  //  registerStringHandlers();
 
   while(!in.eof())
     {                              

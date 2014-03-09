@@ -1,8 +1,5 @@
 #include "cell.h"
-
-template<typename K, typename V> std::map<K, V> Env<K,V>::top;
-template<typename K, typename V> std::map<K, std::function<V(Sexp* sexp, Env<K,V>& env)> > Env<K,V>::evalHandlers;
-
+#include <dlfcn.h>
 
 bool isoperator(char c) {
      std::string const valid_chars = "+*-/!=<>\"'`,";
@@ -72,22 +69,61 @@ std::shared_ptr<Cell> Atom::eval(CellEnv& env)
     }
 }
 
+int loadHandlers(const std::string& lib, const std::string& handlerName, Cell::CellEnv& env)
+{
+  void* handle = dlopen(lib.c_str(), RTLD_LAZY);
+    
+    if (!handle) {
+      std::cout << "Cannot open library: " << dlerror() << '\n';
+        return 1;
+    }
+    
+    // load the symbol
+    typedef void (*hello_t)(Cell::CellEnv& env);
+
+    // reset errors
+    dlerror();
+    hello_t handler = (hello_t) dlsym(handle, handlerName.c_str());
+    const char *dlsym_error = dlerror();
+    if (dlsym_error) {
+      std::cout << "Cannot load symbol 'hello': " << dlsym_error <<
+            '\n';
+        dlclose(handle);
+        return 1;
+    }
+    
+    // use it to do the calculation
+    handler(env);
+    
+    // close the library
+    //dlclose(handle);
+    return 0;
+}
+
 std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 {
   std::shared_ptr<Cell> cl = this->cells[0];
+  if(cl->val.compare("load") == 0)   
+    {
+      loadHandlers(this->cells[1]->eval(env)->val,
+		   this->cells[2]->eval(env)->val,
+		   env);
+      std::shared_ptr<Cell> res(new Atom);
+      res->val =  "loaded";
+      return res;
+    }
 
   if(env.evalHandlers.find(cl->val) != env.evalHandlers.end())
-    return env.evalHandlers[cl->val](this, env);
+      return env.evalHandlers[cl->val](this, env);
 
   if(cl->val.compare("printenv") == 0)   
     {
       
     }
 
+
   if(env.find(cl->val))
     return  env[cl->val]->closure(this, std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
 
   return std::shared_ptr<Cell>(new Atom);  
 }
-
-template class  Env<std::string,std::shared_ptr<Cell> >;
