@@ -1,3 +1,7 @@
+(load "./core.so" "registerCoreHandlers")
+(load "./functional.so" "registerFunctionalHandlers")
+(load "./string.so" "registerStringHandlers")
+
 (progn 
 	(eq (+ 1 2 3) 6)
 	(eq (- 1 2 3) (- 4)) 

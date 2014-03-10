@@ -1,11 +1,8 @@
-#include "core.h"
 #include <ostream>
 #include "cell.h"
 
-void registerCoreHandlers()
+extern "C" void registerCoreHandlers(Cell::CellEnv env)
 {
-  Cell::CellEnv env;
-
   env.evalHandlers["+"] = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res(new Atom);
     double sum = 0;

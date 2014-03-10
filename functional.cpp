@@ -1,11 +1,8 @@
-#include "functional.h"
 #include "cell.h"
 
 
-void registerFunctionalHandlers()
+extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 {
-  Cell::CellEnv env;
-
   env.evalHandlers["defun"] = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Atom> fname = std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak

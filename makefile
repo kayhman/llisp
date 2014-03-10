@@ -1,28 +1,26 @@
 CPP=clang++
 CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -g
 
-all: libenvironment libcell libstring elisp
+all: libenvironment.so libcell.so string.so core.so functional.so elisp
 	sudo cp libenvironment.so libcell.so /usr/local/lib
 
 clean:
 	rm -rf *.so elisp
 
-elisp: functional.cpp core.cpp parse.cpp
+elisp: parse.cpp libenvironment.so libcell.so
 	$(CPP) $(CFLAGS) -L. -lenvironment -lcell -o $@ $?
 
-libenvironment: environment.cpp
-	$(CPP) $(CFLAGS) --shared -fPIC -o $@.so $?
+libenvironment.so: environment.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-libcell: cell.cpp
-	$(CPP) $(CFLAGS) --shared -fPIC -L. -lenvironment -o $@.so $?
+libcell.so: cell.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -L. -lenvironment -o $@ $?
 
-libstring: string.cpp
-	$(CPP) $(CFLAGS) --shared -fPIC -o $@.so $?
+string.so: string.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
+core.so: core.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-macro: macro.cpp 
-	$(CPP) $(CFLAGS) -o $@ $?
-
-loading: hello.cpp main.cpp
-	$(CPP) $(CFLAGS) -o $@ main.cpp
-	$(CPP) $(CFLAGS) --shared -fPIC -o hello.so hello.cpp
+functional.so: functional.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
