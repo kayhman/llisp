@@ -128,11 +128,28 @@ void evalHelper(const std::string& code, Cell::CellEnv& env)
     }
 }
 
-int main(int argc, char* argv[])
+void loadFile(const std::string& file, Cell::CellEnv env)
 {
-  //  std::ifstream in(argv[1]);
+  std::ifstream in(file);
+  while(!in.eof())
+    {                              
+      std::shared_ptr<Cell> sexp = parse(in);
+      if(sexp)
+	{
+          std::cout << "> " << *sexp << std::endl;
+	  std::cout << "-> " << *sexp->eval(env) << std::endl;
+	}
+      else
+	break;
+    }
+}
+int main(int argc, char* argv[])
+{ 
   Cell::CellEnv env; 
   std::string in;
+
+  if(argc == 2)
+    loadFile(argv[1], env);
 
   evalHelper("(load \"./core.so\" \"registerCoreHandlers\")", env);
   evalHelper("(load \"./functional.so\" \"registerFunctionalHandlers\")", env);
