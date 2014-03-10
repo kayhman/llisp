@@ -7,7 +7,8 @@ std::shared_ptr<Cell> parse(std::istream& ss)
 
      std::vector<std::shared_ptr<Sexp> > sexps;
      std::shared_ptr<Sexp> sexp;
-  
+     
+     int count = 0;
      char ch;
      std::string buffer;
      Cell::Quoting quoting = Cell::NoneQ;
@@ -18,6 +19,7 @@ std::shared_ptr<Cell> parse(std::istream& ss)
           {
                if(ch == '(')
                {
+		 count++;
                  std::shared_ptr<Sexp> sx(new Sexp);
                  if(sexps.size())
                    sexp->cells.push_back(sx);
@@ -39,7 +41,7 @@ std::shared_ptr<Cell> parse(std::istream& ss)
 		 at->computeVal(buffer);
 		 if(!sexps.size())
 		   return at;
-
+	
 		 if(quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx(new Sexp);
@@ -60,6 +62,7 @@ std::shared_ptr<Cell> parse(std::istream& ss)
 
                if(ch == ')')
                {
+		 count--;
 		 if(sexp->quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx(new Sexp);
@@ -106,25 +109,40 @@ std::shared_ptr<Cell> parse(std::istream& ss)
              || ss.eof())
                break; //done with parsing
      }
-  
-     return sexp;
+     
+     if(count == 0)
+       return sexp;
+     else
+       return std::shared_ptr<Cell>(new Atom("Unbalanced sexp !"));
+}
+
+void evalHelper(const std::string& code, Cell::CellEnv& env)
+{
+  std::stringstream ss;
+  ss << code << "\n";
+  std::shared_ptr<Cell> sexp = parse(ss);
+  if(sexp)
+    {
+      std::cout << "> " << *sexp << std::endl;
+      std::cout << "-> " << *sexp->eval(env) << std::endl;
+    }
 }
 
 int main(int argc, char* argv[])
 {
-  std::ifstream in(argv[1]);
+  //  std::ifstream in(argv[1]);
   Cell::CellEnv env; 
+  std::string in;
 
-  while(!in.eof())
-    {                              
-      std::shared_ptr<Cell> sexp = parse(in);
-      if(sexp)
-	{
-          std::cout << "> " << *sexp << std::endl;
-	  std::cout << "-> " << *sexp->eval(env) << std::endl;
-	}
-      else
-	break;
+  evalHelper("(load \"./core.so\" \"registerCoreHandlers\")", env);
+  evalHelper("(load \"./functional.so\" \"registerFunctionalHandlers\")", env);
+  evalHelper("(load \"./string.so\" \"registerStringHandlers\")", env);
+
+  while(true)
+    {
+      std::cout << "elisp> ";
+      std::getline(std::cin, in);
+      evalHelper(in, env);
     }
   
   return 0;

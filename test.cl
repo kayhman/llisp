@@ -3,10 +3,10 @@
 (load "./string.so" "registerStringHandlers")
 
 (progn 
-	(eq (+ 1 2 3) 6)
-	(eq (- 1 2 3) (- 4)) 
-	(* 1 2 3)
-	(/ 1 2 3))
+	(eq (+ 1 2 3) 6)	
+	(eq (- 1 2 3) -4) 	
+	(eq (* 1 2 3) 6)	
+	(eq (/ 6 2 3) 1))
 
 (setq lapin 0.666)
 
