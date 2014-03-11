@@ -151,12 +151,13 @@ int main(int argc, char* argv[])
   std::string in;
   std::string curLine;
 
-  if(argc == 2)
-    loadFile(argv[1], env);
-
   evalHelper("(load \"./core.so\" \"registerCoreHandlers\")", env);
   evalHelper("(load \"./functional.so\" \"registerFunctionalHandlers\")", env);
   evalHelper("(load \"./string.so\" \"registerStringHandlers\")", env);
+  evalHelper("(load \"./bench.so\" \"registerBenchHandlers\")", env);
+
+  if(argc == 2)
+    loadFile(argv[1], env);
 
   while(true)
     {

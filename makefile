@@ -1,7 +1,7 @@
 CPP=clang++
 CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -g
 
-all: libenvironment.so libcell.so string.so core.so functional.so elisp
+all: libenvironment.so libcell.so string.so core.so functional.so bench.so elisp
 	sudo cp libenvironment.so libcell.so /usr/local/lib
 
 clean:
@@ -23,4 +23,7 @@ core.so: core.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
 functional.so: functional.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
+
+bench.so: bench.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
