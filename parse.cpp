@@ -113,10 +113,10 @@ std::shared_ptr<Cell> parse(std::istream& ss)
      if(count == 0)
        return sexp;
      else
-       return std::shared_ptr<Cell>(new Atom("Unbalanced sexp !"));
+       return std::shared_ptr<Cell>(NULL);
 }
 
-void evalHelper(const std::string& code, Cell::CellEnv& env)
+bool evalHelper(const std::string& code, Cell::CellEnv& env)
 {
   std::stringstream ss;
   ss << code << "\n";
@@ -125,7 +125,9 @@ void evalHelper(const std::string& code, Cell::CellEnv& env)
     {
       std::cout << "> " << *sexp << std::endl;
       std::cout << "-> " << *sexp->eval(env) << std::endl;
+      return true;
     }
+  return false;
 }
 
 void loadFile(const std::string& file, Cell::CellEnv env)
@@ -147,6 +149,7 @@ int main(int argc, char* argv[])
 { 
   Cell::CellEnv env; 
   std::string in;
+  std::string curLine;
 
   if(argc == 2)
     loadFile(argv[1], env);
@@ -157,9 +160,11 @@ int main(int argc, char* argv[])
 
   while(true)
     {
-      std::cout << "elisp> ";
+      std::cout << (curLine.size() ? "     > " : "elisp> ");
       std::getline(std::cin, in);
-      evalHelper(in, env);
+      curLine += " " +  in;
+      if(evalHelper(curLine, env))
+        curLine = "";
     }
   
   return 0;
