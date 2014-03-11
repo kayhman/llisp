@@ -1,5 +1,6 @@
 CPP=clang++
-CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -g
+#CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -g
+CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -O3
 
 all: libenvironment.so libcell.so string.so core.so functional.so bench.so elisp
 	sudo cp libenvironment.so libcell.so /usr/local/lib
