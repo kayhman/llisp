@@ -1,17 +1,17 @@
 #include "environment.h"
 #include "cell.h"
 #include <ctime>
+#include <chrono>
 
 
 extern "C" void registerBenchHandlers(Cell::CellEnv& env)
 {
   env.evalHandlers["time"] = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> exp = sexp->cells[1];
-    clock_t start_time = clock();
+    auto t_start = std::chrono::high_resolution_clock::now();
     std::shared_ptr<Cell> res = exp->eval(env);
-    clock_t finis_time = clock();
-    std::cout << "cloeck " << start_time << " " << finis_time << std::endl;
-    std::cout << *exp << " takes " << ((double) ((finis_time - start_time)) / CLOCKS_PER_SEC) <<  " seconds" << std::endl;
+    auto t_end = std::chrono::high_resolution_clock::now();
+    std::cout << *exp << " takes " << std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count() << " ms" << std::endl;
 
     return res;
   };
