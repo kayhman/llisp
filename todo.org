@@ -1,0 +1,5 @@
+* Todos 
+** Support trace
+** Support debug
+** Use only three types : list, symbol, numbers
+** add support for socket

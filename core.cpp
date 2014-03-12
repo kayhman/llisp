@@ -44,19 +44,46 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     return res;
   };
 
+   env.evalHandlers["<"] = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Cell> m1 = sexp->cells[1];
+    std::shared_ptr<Cell> m2 = sexp->cells[2];
+   
+		double a1 = atof(m1->eval(env)->val.c_str());
+		double a2 = atof(m2->eval(env)->val.c_str());
+ 
+    std::shared_ptr<Cell> res(new Atom);
+    if (a1 < a2)
+				res->val = "True";
+    else
+				res->val = "";
+    return res;
+  };
+
+   env.evalHandlers[">"] = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Cell> m1 = sexp->cells[1];
+    std::shared_ptr<Cell> m2 = sexp->cells[2];
+   
+		double a1 = atof(m1->eval(env)->val.c_str());
+		double a2 = atof(m2->eval(env)->val.c_str());
+ 
+    std::shared_ptr<Cell> res(new Atom);
+    if (a1 > a2)
+				res->val = "True";
+    else
+				res->val = "";
+    return res;
+  };
+
+
   env.evalHandlers["eq"] = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
     
     std::shared_ptr<Cell> res(new Atom);
     if (m1->eval(env)->val.compare(m2->eval(env)->val) == 0)
-      {
-	res->val = "True";
-      }
+			res->val = "True";
     else
-      {
-	res->val = "";
-      }
+			res->val = "";
     return res;
   };
 
