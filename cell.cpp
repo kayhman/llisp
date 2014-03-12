@@ -31,39 +31,61 @@ std::ostream& operator<< (std::ostream& stream, const Sexp& cell)
 
 std::ostream& operator<< (std::ostream& stream, const Atom& atom)
 {
-  stream << atom.val;
+  stream << atom.val << " " << atom.real;
   return stream;
 }
 
-void Atom::computeType(const std::string& code)
+Atom::Type Atom::computeType(const std::string& code)
 {
-     this->type = Atom::Symbol;
-     if(isdigit(code.front()) ||  isoperator(code.front()))
-          this->type = Atom::Real;
-     if(code.front() == '"' &&  code.back() == '"')
-          this->type = Atom::String;
+  if((isdigit(code.front()) ||  isoperator(code.front())) && code.size() > 1)
+    if(isdigit(code[1]))
+      return  Atom::Real;
+  if(isdigit(code.front()) && code.size() == 1)
+    return  Atom::Real;
+  if(code.front() == '"' &&  code.back() == '"')
+    return Atom::String;
+  return Atom::Symbol;
 }
 
-void Atom::computeVal(const std::string& code) const
+void RealAtom::computeVal(const std::string& code) const
+{
+  this->real = atof(code.c_str());
+  this->val = code;
+}
+
+void StringAtom::computeVal(const std::string& code) const
+{
+  this->val = code; //code.substr(1, code.size()-1); 
+}
+
+void SymbolAtom::computeVal(const std::string& code) const
 {
   this->val = code;
 }
 
 
-std::shared_ptr<Cell> Atom::eval(CellEnv& env)
+std::shared_ptr<Cell> RealAtom::eval(CellEnv& env)
 {
-  if(this->type == Atom::Symbol &&  env.find(this->val))
+  std::shared_ptr<Cell> res(new RealAtom);
+  *res = *this;
+  return res;
+}
+
+std::shared_ptr<Cell> StringAtom::eval(CellEnv& env)
+{
+  std::shared_ptr<Cell> res(new StringAtom);
+  *res = *this;
+  res->val = this->val.substr(1, this->val.size()-2); 
+  return res;
+}
+
+std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
+{
+  if(env.find(this->val))
       return env[this->val]->eval(env);
-  else if(this->type == Atom::String)
-    {
-      std::shared_ptr<Cell> res(new Atom);
-      *res = *this;
-      res->val = this->val.substr(1, this->val.size()-2); 
-      return res;
-    }
   else
     {
-      std::shared_ptr<Cell> res(new Atom);
+      std::shared_ptr<Cell> res(new SymbolAtom);
       *res = *this;
       return res;
     }
@@ -108,7 +130,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       loadHandlers(this->cells[1]->eval(env)->val,
 		   this->cells[2]->eval(env)->val,
 		   env);
-      std::shared_ptr<Cell> res(new Atom);
+      std::shared_ptr<Cell> res(new StringAtom);
       res->val =  "loaded";
       return res;
     }
@@ -125,5 +147,5 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
   if(env.find(cl->val))
     return  env[cl->val]->closure(this, std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
 
-  return std::shared_ptr<Cell>(new Atom);  
+  return std::shared_ptr<Cell>(new SymbolAtom);  
 }

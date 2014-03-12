@@ -49,7 +49,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     }
     
     
-    std::shared_ptr<Cell> res(new Atom());
+    std::shared_ptr<Cell> res(new SymbolAtom());
     res->val = "closure";
     res->closure = sexp->closure;
     

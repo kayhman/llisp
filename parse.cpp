@@ -36,8 +36,15 @@ std::shared_ptr<Cell> parse(std::istream& ss)
 	  
                if(buffer.size())
                {
-		 std::shared_ptr<Atom> at(new Atom);
-		 at->computeType(buffer);
+                 Atom::Type type = Atom::computeType(buffer);
+                 std::shared_ptr<Atom> at;;
+                 if(type == Atom::Symbol)
+                   at.reset(new SymbolAtom);
+                 if(type == Atom::String)
+                   at.reset(new StringAtom);
+                 if(type == Atom::Real)
+                   at.reset(new RealAtom);
+                 
 		 at->computeVal(buffer);
 		 if(!sexps.size())
 		   return at;
@@ -45,8 +52,8 @@ std::shared_ptr<Cell> parse(std::istream& ss)
 		 if(quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx(new Sexp);
-		     std::shared_ptr<Atom> quote(new Atom);
-		     quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
+		     std::shared_ptr<Atom> quote(new SymbolAtom);
+		     //quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
 		     
 		     sx->cells.push_back(quote);
@@ -66,7 +73,7 @@ std::shared_ptr<Cell> parse(std::istream& ss)
 		 if(sexp->quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx(new Sexp);
-		     std::shared_ptr<Atom> quote(new Atom);
+		     std::shared_ptr<Atom> quote(new SymbolAtom);
 		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 
