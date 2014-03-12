@@ -55,7 +55,7 @@ void RealAtom::computeVal(const std::string& code) const
 
 void StringAtom::computeVal(const std::string& code) const
 {
-  this->val = code; //code.substr(1, code.size()-1); 
+  this->val = code.substr(1, code.size()-2);
 }
 
 void SymbolAtom::computeVal(const std::string& code) const
@@ -75,7 +75,7 @@ std::shared_ptr<Cell> StringAtom::eval(CellEnv& env)
 {
   std::shared_ptr<Cell> res(new StringAtom);
   *res = *this;
-  res->val = this->val.substr(1, this->val.size()-2); 
+  //  res->val = this->val.substr(1, this->val.size()-1); 
   return res;
 }
 
