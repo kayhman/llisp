@@ -17,7 +17,8 @@ private:
 public:
   Val& operator[] (const Key& k);
   Val& operator[] (Key& k);
-  bool find (const Key& k);
+  typename std::map<Key,Val>::iterator find(const Key& k);
+  typename std::map<Key,Val>::iterator end() const;
   Env();
   void addEnvMap(std::map<Key, Val>* env);
   void removeEnv();

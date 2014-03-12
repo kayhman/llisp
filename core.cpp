@@ -102,9 +102,14 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
   };
 
   env.evalHandlers["setq"] = [](Sexp* sexp, Cell::CellEnv& env) {
-    if(!env.find(sexp->cells[1]->val))
-      env[sexp->cells[1]->val].reset();//reset(new Atom);
-    env[sexp->cells[1]->val] = sexp->cells[2]->eval(env);
+    auto it = env.find(sexp->cells[1]->val);
+    if(it != env.end())
+      {
+	it->second.reset();//reset(new Atom);
+	it->second = sexp->cells[2]->eval(env);
+      }
+    else
+      env[sexp->cells[1]->val] = sexp->cells[2]->eval(env);
     return env[sexp->cells[1]->val];
   };
 

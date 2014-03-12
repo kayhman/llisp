@@ -38,12 +38,21 @@ Val& Env<Key, Val>::operator[] (Key& k)
 }
 
 template <typename Key, typename Val>
-bool Env<Key, Val>::find (const Key& k)
+ typename std::map<Key,Val>::iterator Env<Key, Val>::find (const Key& k)
 {
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
-    if((*envIt)->find(k) != (*envIt)->end())
-	return true;
-  return false;
+    {
+       typename std::map<Key,Val>::iterator lIt = (*envIt)->find(k);
+	if(lIt != (*envIt)->end())
+	  return lIt;
+    }
+  return this->top.end();
+}
+
+template <typename Key, typename Val>
+typename std::map<Key,Val>::iterator Env<Key, Val>::end() const
+{
+  return this->top.end();
 }
 
 template<typename K, typename V> std::map<K, V> Env<K,V>::top;

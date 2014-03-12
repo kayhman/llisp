@@ -109,7 +109,7 @@ std::shared_ptr<Cell> StringAtom::eval(CellEnv& env)
 
 std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
 {
-  if(env.find(this->val))
+  if(env.find(this->val) != env.end())
       return env[this->val]->eval(env);
   else
     {
@@ -163,17 +163,18 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       return res;
     }
 
-  if(env.evalHandlers.find(cl->val) != env.evalHandlers.end())
-      return env.evalHandlers[cl->val](this, env);
+  auto evalIt = env.evalHandlers.find(cl->val);
+  if(evalIt != env.evalHandlers.end())
+    return (evalIt->second)(this, env);
 
   if(cl->val.compare("printenv") == 0)   
     {
       
     }
 
-
-  if(env.find(cl->val))
-    return  env[cl->val]->closure(this, std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
+  auto clIt = env.find(cl->val);
+  if(clIt != env.end())
+    return  clIt->second->closure(this, std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
 
   return std::shared_ptr<Cell>(new SymbolAtom);  
 }
