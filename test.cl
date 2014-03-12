@@ -27,6 +27,7 @@
          (* a b)))
 	
 (+ 1 3)
+lapin
 (mymy lapin 2)
 (mymy lapin lapin)
 (setq lapin 0.777)

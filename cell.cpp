@@ -31,19 +31,47 @@ std::ostream& operator<< (std::ostream& stream, const Sexp& cell)
 
 std::ostream& operator<< (std::ostream& stream, const Atom& atom)
 {
-  stream << atom.val << " " << atom.real;
+  const RealAtom * real = dynamic_cast<const RealAtom*>(&atom);
+  const StringAtom * string = dynamic_cast<const StringAtom*>(&atom);
+  const SymbolAtom * symbol = dynamic_cast<const SymbolAtom*>(&atom);
+
+  if(real)
+    stream << *real;
+  if(string)
+    stream << *string;
+  if(symbol)
+    stream << *symbol;
+  return stream;
+}
+
+std::ostream& operator<< (std::ostream& stream, const RealAtom& atom)
+{
+  stream << atom.real;
+  return stream;
+}
+
+std::ostream& operator<< (std::ostream& stream, const StringAtom& atom)
+{
+  stream << atom.val;
+  return stream;
+}
+
+std::ostream& operator<< (std::ostream& stream, const SymbolAtom& atom)
+{
+  stream << atom.val;
   return stream;
 }
 
 Atom::Type Atom::computeType(const std::string& code)
 {
-  if((isdigit(code.front()) ||  isoperator(code.front())) && code.size() > 1)
-    if(isdigit(code[1]))
-      return  Atom::Real;
-  if(isdigit(code.front()) && code.size() == 1)
-    return  Atom::Real;
   if(code.front() == '"' &&  code.back() == '"')
     return Atom::String;
+  if(isdigit(code.front()) ||  
+     (isoperator(code.front()) && code.size() > 1))
+    return  Atom::Real;
+  if(isdigit(code.front()) && code.size() == 1)
+    return  Atom::Real;
+
   return Atom::Symbol;
 }
 

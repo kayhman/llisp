@@ -60,6 +60,7 @@ struct RealAtom : public Atom
 {
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   void computeVal(const std::string& code) const;
+  friend std::ostream& operator<< (std::ostream& stream, const RealAtom& cell);
 };
 
 
@@ -67,10 +68,12 @@ struct StringAtom : public Atom
 {
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   void computeVal(const std::string& code) const;
+  friend std::ostream& operator<< (std::ostream& stream, const StringAtom& cell);
 };
 
 struct SymbolAtom : public Atom
 {
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   void computeVal(const std::string& code) const;
+  friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);
 };
