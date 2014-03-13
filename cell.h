@@ -25,6 +25,7 @@ struct Cell
   mutable std::string val;
   mutable double real;
   Quoting quoting;
+  static std::list<std::shared_ptr<Cell> > gc;
 
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
 
@@ -38,21 +39,24 @@ struct Sexp : public Cell
   virtual ~Sexp() {};
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   friend std::ostream& operator<< (std::ostream& stream, const Sexp& cell);
+  static std::shared_ptr<Sexp> New();
 };
 
 
 struct Atom : public Cell
 {
   enum Type {Symbol, Real, String};
+  std::shared_ptr<Cell> evaluated;
   // Type type;
   virtual ~Atom() {};  
   static Type computeType(const std::string& code);
   virtual void computeVal(const std::string& code) const = 0;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
-  Atom(){};
   Atom(const std::string& val) {this->val = val;};
  
   friend std::ostream& operator<< (std::ostream& stream, const Atom& cell);
+ protected:
+ Atom() : evaluated(NULL) {};
 };
 
 
@@ -61,6 +65,9 @@ struct RealAtom : public Atom
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const RealAtom& cell);
+  static std::shared_ptr<RealAtom> New();
+ protected:
+  RealAtom() {};
 };
 
 
@@ -69,6 +76,9 @@ struct StringAtom : public Atom
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const StringAtom& cell);
+  static std::shared_ptr<StringAtom> New();
+ protected:
+  StringAtom() {};
 };
 
 struct SymbolAtom : public Atom
@@ -76,4 +86,7 @@ struct SymbolAtom : public Atom
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);
+  static std::shared_ptr<SymbolAtom> New();
+ protected:
+  SymbolAtom() {};
 };

@@ -49,7 +49,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     }
     
     
-    std::shared_ptr<Cell> res(new SymbolAtom());
+    std::shared_ptr<Cell> res = SymbolAtom::New();
     res->val = "closure";
     res->closure = sexp->closure;
     
@@ -83,7 +83,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	      {
 		if(sexp->cells.size() > 0)
 		  {
-		    std::shared_ptr<Sexp> newS(new Sexp());
+		    std::shared_ptr<Sexp> newS = Sexp::New();
 		    std::for_each(sexp->cells.begin(), sexp->cells.end(), [&](std::shared_ptr<Cell> cell){ newS->cells.push_back(recursiveReplace(cell, re, s));});
 		    
 		    if(sexp->cells[0]->val.compare("backquote") == 0)

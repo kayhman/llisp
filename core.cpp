@@ -4,7 +4,7 @@
 extern "C" void registerCoreHandlers(Cell::CellEnv env)
 {
   env.evalHandlers["+"] = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Cell> res(new RealAtom);
+    std::shared_ptr<Cell> res = RealAtom::New();
     res->real = 0;
     std::for_each(sexp->cells.begin()+1, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real += cell->eval(env)->real;});
 
@@ -12,7 +12,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
   };
 
   env.evalHandlers["-"] = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Cell> res(new RealAtom);
+    std::shared_ptr<Cell> res = RealAtom::New();
     res->real = sexp->cells[1]->eval(env)->real;
     std::for_each(sexp->cells.begin()+2, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real -= cell->eval(env)->real;});
 
@@ -20,7 +20,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
   };
 
   env.evalHandlers["*"] = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Cell> res(new RealAtom);
+    std::shared_ptr<Cell> res = RealAtom::New();
     res->real = 1.0;
     std::for_each(sexp->cells.begin()+1, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real *= cell->eval(env)->real;});
 
@@ -28,7 +28,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
   };
 
   env.evalHandlers["/"] = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Cell> res(new RealAtom);
+    std::shared_ptr<Cell> res = RealAtom::New();
     res->real = sexp->cells[1]->eval(env)->real;
     std::for_each(sexp->cells.begin()+2, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real /= cell->eval(env)->real;});
     return res;
@@ -41,7 +41,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     double a1 =m1->eval(env)->real;
     double a2 =m2->eval(env)->real;
     
-    std::shared_ptr<Cell> res(new SymbolAtom);
+    std::shared_ptr<Cell> res = SymbolAtom::New();
     if (a1 < a2)
       res->val = "True";
     else
@@ -56,7 +56,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     double a1 = m1->eval(env)->real;
     double a2 = m2->eval(env)->real;
  
-    std::shared_ptr<Cell> res(new SymbolAtom);
+    std::shared_ptr<Cell> res = SymbolAtom::New();
     if (a1 > a2)
       res->val = "True";
     else
@@ -69,7 +69,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
     
-    std::shared_ptr<Cell> res(new SymbolAtom);
+    std::shared_ptr<Cell> res = SymbolAtom::New();
     if (m1->eval(env)->val.compare(m2->eval(env)->val) == 0)
       res->val = "True";
     else

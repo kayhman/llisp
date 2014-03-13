@@ -20,7 +20,7 @@ std::shared_ptr<Cell> parse(std::istream& ss)
                if(ch == '(')
                {
 		 count++;
-                 std::shared_ptr<Sexp> sx(new Sexp);
+                 std::shared_ptr<Sexp> sx= Sexp::New();
                  if(sexps.size())
                    sexp->cells.push_back(sx);
                  sexp = sx;
@@ -39,11 +39,11 @@ std::shared_ptr<Cell> parse(std::istream& ss)
                  Atom::Type type = Atom::computeType(buffer);
                  std::shared_ptr<Atom> at;;
                  if(type == Atom::Symbol)
-                   at.reset(new SymbolAtom);
+                   at = SymbolAtom::New();
                  if(type == Atom::String)
-                   at.reset(new StringAtom);
+                   at = StringAtom::New();
                  if(type == Atom::Real)
-                   at.reset(new RealAtom);
+                   at = RealAtom::New();
                  
 		 at->computeVal(buffer);
 		 if(!sexps.size())
@@ -51,8 +51,8 @@ std::shared_ptr<Cell> parse(std::istream& ss)
 	
 		 if(quoting != Cell::NoneQ)
 		   {
-		     std::shared_ptr<Sexp> sx(new Sexp);
-		     std::shared_ptr<Atom> quote(new SymbolAtom);
+		     std::shared_ptr<Sexp> sx = Sexp::New();
+		     std::shared_ptr<Atom> quote = SymbolAtom::New();
 		     //quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
 		     
@@ -72,8 +72,8 @@ std::shared_ptr<Cell> parse(std::istream& ss)
 		 count--;
 		 if(sexp->quoting != Cell::NoneQ)
 		   {
-		     std::shared_ptr<Sexp> sx(new Sexp);
-		     std::shared_ptr<Atom> quote(new SymbolAtom);
+		     std::shared_ptr<Sexp> sx = Sexp::New();
+		     std::shared_ptr<Atom> quote =SymbolAtom::New();
 		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 
