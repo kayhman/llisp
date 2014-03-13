@@ -170,6 +170,11 @@ int main(int argc, char* argv[])
     {
       std::cout << (curLine.size() ? "     > " : "elisp> ");
       std::getline(std::cin, in);
+      if(std::cin.eof())
+        {
+          std::cout << "goobye" << std::endl;
+          break;
+        }
       curLine += " " +  in;
       if(evalHelper(curLine, env))
         curLine = "";
