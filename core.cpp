@@ -41,7 +41,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     double a1 = m1->eval(env)->real;
     double a2 = m2->eval(env)->real;
     
-    std::shared_ptr<Cell> res = sexp->evaluated;//RealAtom::New();
+    std::shared_ptr<Cell> res = sexp->evaluated.lock();//RealAtom::New();
     if (a1 < a2)
       res->real = 1.0;
     else
@@ -56,7 +56,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     double a1 = m1->eval(env)->real;
     double a2 = m2->eval(env)->real;
  
-    std::shared_ptr<Cell> res = sexp->evaluated;//RealAtom::New();
+    std::shared_ptr<Cell> res = sexp->evaluated.lock();//RealAtom::New();
     if (a1 > a2)
       res->real = 1.0;
     else

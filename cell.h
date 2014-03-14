@@ -25,7 +25,6 @@ Cell() :quoting(NoneQ) {};
   mutable std::string val;
   mutable double real;
   Quoting quoting;
-  static std::list<std::shared_ptr<Cell> > gc;
   std::weak_ptr<Cell> evaluated;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
 
@@ -40,6 +39,9 @@ struct Sexp : public Cell
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   friend std::ostream& operator<< (std::ostream& stream, const Sexp& cell);
   static std::shared_ptr<Sexp> New();
+  static std::list<std::shared_ptr<Sexp> > gc;
+  static std::list<std::shared_ptr<Sexp> > pool;
+  static void initGC();
 };
 
 
@@ -65,6 +67,9 @@ struct RealAtom : public Atom
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const RealAtom& cell);
   static std::shared_ptr<RealAtom> New();
+  static std::list<std::shared_ptr<RealAtom> > gc;
+  static std::list<std::shared_ptr<RealAtom> > pool;
+  static void initGC();
  protected:
   RealAtom() {};
 };
@@ -76,6 +81,9 @@ struct StringAtom : public Atom
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const StringAtom& cell);
   static std::shared_ptr<StringAtom> New();
+  static std::list<std::shared_ptr<StringAtom> > gc;
+  static std::list<std::shared_ptr<StringAtom> > pool;
+  static void initGC();
  protected:
   StringAtom() {};
 };
@@ -85,7 +93,10 @@ struct SymbolAtom : public Atom
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);
-  static std::shared_ptr<SymbolAtom> New();
+  static std::shared_ptr<SymbolAtom> New(); 
+  static std::list<std::shared_ptr<SymbolAtom> > gc;
+  static std::list<std::shared_ptr<SymbolAtom> > pool;
+  static void initGC();
  protected:
   SymbolAtom() {};
 };

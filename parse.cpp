@@ -158,6 +158,11 @@ int main(int argc, char* argv[])
   std::string in;
   std::string curLine;
 
+  Sexp::initGC();
+  RealAtom::initGC();
+  StringAtom::initGC();
+  SymbolAtom::initGC();
+
   evalHelper("(load \"./core.so\" \"registerCoreHandlers\")", env);
   evalHelper("(load \"./functional.so\" \"registerFunctionalHandlers\")", env);
   evalHelper("(load \"./string.so\" \"registerStringHandlers\")", env);

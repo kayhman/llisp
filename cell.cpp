@@ -116,33 +116,71 @@ std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
 
 std::shared_ptr<Sexp> Sexp::New()
 {
-  std::shared_ptr<Sexp> sexp(new Sexp);
+  if(pool.size() == 0)
+    {
+      std::cout << "out of mem Sexp" << std::endl;
+      std::cout << "Free GC " << gc.size() << std::endl;
+      
+      exit(0);
+    }
+
+  std::shared_ptr<Sexp> sexp = pool.back();
+  pool.pop_back();
   sexp->evaluated = sexp;
-  //  Cell::gc.push_back(sexp);
+  gc.push_back(sexp);
   return sexp;
 }
 
 std::shared_ptr<RealAtom> RealAtom::New()
 {
-  std::shared_ptr<RealAtom> atom(new RealAtom);
+  if(pool.size() == 0)
+    {
+      std::cout << "out of mem Real" << std::endl;
+      std::cout << "Free GC " << gc.size() << std::endl;
+      for(auto it = 0 ; i < gc.size() ; i++)
+        {
+          std::shared_ptr<RealAtom> r = gc[i];
+          if()
+        }
+      exit(0);
+    }
+
+  std::shared_ptr<RealAtom> atom = pool.back();
+  pool.pop_back();
   atom->evaluated = atom;
-  //  Cell::gc.push_back(atom);
+  gc.push_back(atom);
   return atom;
 }
 
 std::shared_ptr<StringAtom> StringAtom::New()
 {
-  std::shared_ptr<StringAtom> atom(new StringAtom);
+  if(pool.size() == 0)
+    {
+      std::cout << "out of mem String" << std::endl;
+      std::cout << "Free GC " << gc.size() << std::endl;
+      exit(0);
+    }
+
+  std::shared_ptr<StringAtom> atom = pool.back();
+  pool.pop_back();
   atom->evaluated = atom;
-  //  Cell::gc.push_back(atom);
+  gc.push_back(atom);
   return atom;
 }
 
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
-  std::shared_ptr<SymbolAtom> atom(new SymbolAtom);
+  if(pool.size() == 0)
+    {
+      std::cout << "out of mem Symb" << std::endl;
+      std::cout << "Free GC " << gc.size() << std::endl;
+      exit(0);
+    }
+
+  std::shared_ptr<SymbolAtom> atom = pool.back();
+  pool.pop_back();
   atom->evaluated = atom;
-  //  Cell::gc.push_back(atom);
+  gc.push_back(atom);
   return atom;
 }
 
@@ -206,4 +244,37 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
   return std::shared_ptr<Cell>(SymbolAtom::New());  
 }
 
-std::list<std::shared_ptr<Cell> > Cell::gc;
+void Sexp::initGC()
+{
+  for(int i = 0 ; i < 1024*100 ; i++)
+    pool.push_back(std::shared_ptr<Sexp>(new Sexp()));
+}
+
+void RealAtom::initGC()
+{
+  for(int i = 0 ; i < 1024*100 ; i++)
+    pool.push_back(std::shared_ptr<RealAtom>(new RealAtom()));
+}
+
+void StringAtom::initGC()
+{
+  for(int i = 0 ; i < 1024*100 ; i++)
+    pool.push_back(std::shared_ptr<StringAtom>(new StringAtom()));
+}
+
+void SymbolAtom::initGC()
+{
+  for(int i = 0 ; i < 1024*10 ; i++)
+    pool.push_back(std::shared_ptr<SymbolAtom>(new SymbolAtom()));
+}
+
+std::list<std::shared_ptr<Sexp> > Sexp::gc;
+std::list<std::shared_ptr<RealAtom> > RealAtom::gc;
+std::list<std::shared_ptr<StringAtom> > StringAtom::gc;
+std::list<std::shared_ptr<SymbolAtom> > SymbolAtom::gc;
+
+std::list<std::shared_ptr<Sexp> > Sexp::pool;
+std::list<std::shared_ptr<RealAtom> > RealAtom::pool;
+std::list<std::shared_ptr<StringAtom> > StringAtom::pool;
+std::list<std::shared_ptr<SymbolAtom> > SymbolAtom::pool;
+
