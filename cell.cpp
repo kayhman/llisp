@@ -135,28 +135,28 @@ std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
 std::shared_ptr<Sexp> Sexp::New()
 {
   std::shared_ptr<Sexp> sexp(new Sexp);
-  Cell::gc.push_back(sexp);
+  //  Cell::gc.push_back(sexp);
   return sexp;
 }
 
 std::shared_ptr<RealAtom> RealAtom::New()
 {
   std::shared_ptr<RealAtom> atom(new RealAtom);
-  Cell::gc.push_back(atom);
+  //  Cell::gc.push_back(atom);
   return atom;
 }
 
 std::shared_ptr<StringAtom> StringAtom::New()
 {
   std::shared_ptr<StringAtom> atom(new StringAtom);
-  Cell::gc.push_back(atom);
+  //  Cell::gc.push_back(atom);
   return atom;
 }
 
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
   std::shared_ptr<SymbolAtom> atom(new SymbolAtom);
-  Cell::gc.push_back(atom);
+  //  Cell::gc.push_back(atom);
   return atom;
 }
 
@@ -213,7 +213,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       
     }
 
-  auto clIt = env.find(cl->val);
+  auto clIt = env.top.find(cl->val);
   if(clIt != env.end())
     return  clIt->second->closure(this, std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
 

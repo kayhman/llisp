@@ -23,17 +23,23 @@ template <typename Key, typename Val>
 Val& Env<Key, Val>::operator[] (const Key& k)
 {
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
-    if((*envIt)->find(k) != (*envIt)->end())
- 	return (**envIt)[k];
-   return (*envs.back())[k];
+    {
+      auto it = (*envIt)->find(k);
+      if(it != (*envIt)->end())
+ 	return it->second;
+    }
+      return (*envs.back())[k];
 }
 
 template <typename Key, typename Val>
 Val& Env<Key, Val>::operator[] (Key& k)
 {
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
-    if((*envIt)->find(k) != (*envIt)->end())
- 	return (**envIt)[k];
+    {
+      auto it = (*envIt)->find(k);
+      if(it != (*envIt)->end())
+      return it->second;
+    }
    return (*envs.back())[k];
 }
 
