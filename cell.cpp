@@ -94,24 +94,12 @@ void SymbolAtom::computeVal(const std::string& code) const
 
 std::shared_ptr<Cell> RealAtom::eval(CellEnv& env)
 {
-  if(!evaluated)
-    {
-      //      std::cout << "eval real" << std::endl;
-      evaluated = RealAtom::New();
-      *evaluated = *this;
-    }
-  return evaluated;
+  return evaluated.lock();
 }
 
 std::shared_ptr<Cell> StringAtom::eval(CellEnv& env)
 {
-  if(!evaluated)
-    {
-      //      std::cout << "eval string" << std::endl;
-      evaluated = StringAtom::New();
-      *evaluated = *this;
-    }
-  return evaluated;
+  return evaluated.lock();
 }
 
 std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
@@ -122,19 +110,14 @@ std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
       return it->second->eval(env);
   else
     {
-      if(!evaluated)
-	{
-	  //	  std::cout << "eval symbol" << std::endl;
-	  evaluated = StringAtom::New();
-	  *evaluated = *this;
-	}
-      return evaluated;
+      return evaluated.lock();
     }
 }
 
 std::shared_ptr<Sexp> Sexp::New()
 {
   std::shared_ptr<Sexp> sexp(new Sexp);
+  sexp->evaluated = sexp;
   //  Cell::gc.push_back(sexp);
   return sexp;
 }
@@ -142,6 +125,7 @@ std::shared_ptr<Sexp> Sexp::New()
 std::shared_ptr<RealAtom> RealAtom::New()
 {
   std::shared_ptr<RealAtom> atom(new RealAtom);
+  atom->evaluated = atom;
   //  Cell::gc.push_back(atom);
   return atom;
 }
@@ -149,6 +133,7 @@ std::shared_ptr<RealAtom> RealAtom::New()
 std::shared_ptr<StringAtom> StringAtom::New()
 {
   std::shared_ptr<StringAtom> atom(new StringAtom);
+  atom->evaluated = atom;
   //  Cell::gc.push_back(atom);
   return atom;
 }
@@ -156,6 +141,7 @@ std::shared_ptr<StringAtom> StringAtom::New()
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
   std::shared_ptr<SymbolAtom> atom(new SymbolAtom);
+  atom->evaluated = atom;
   //  Cell::gc.push_back(atom);
   return atom;
 }
