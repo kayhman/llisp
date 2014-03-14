@@ -20,13 +20,13 @@ struct Cell
   enum Quoting {Quote, BackQuote, NoneQ};
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
-  Cell() :quoting(NoneQ) {};
+Cell() :quoting(NoneQ), evaluated(NULL) {};
   mutable std::function<std::shared_ptr<Cell>(Cell* self, std::vector<std::shared_ptr<Cell> >)> closure;
   mutable std::string val;
   mutable double real;
   Quoting quoting;
   static std::list<std::shared_ptr<Cell> > gc;
-
+  std::shared_ptr<Cell> evaluated;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
 
   friend std::ostream& operator<< (std::ostream& stream, const Cell& cell);
@@ -46,7 +46,6 @@ struct Sexp : public Cell
 struct Atom : public Cell
 {
   enum Type {Symbol, Real, String};
-  std::shared_ptr<Cell> evaluated;
   // Type type;
   virtual ~Atom() {};  
   static Type computeType(const std::string& code);
@@ -56,7 +55,7 @@ struct Atom : public Cell
  
   friend std::ostream& operator<< (std::ostream& stream, const Atom& cell);
  protected:
- Atom() : evaluated(NULL) {};
+ Atom() {};
 };
 
 
