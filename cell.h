@@ -14,6 +14,7 @@
 #include "environment.h"
 
 bool isoperator(char c);
+struct Sexp;
 
 struct Cell
 {
@@ -21,7 +22,7 @@ struct Cell
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
 Cell() :quoting(NoneQ) {};
-  mutable std::function<std::shared_ptr<Cell>(Cell* self, std::vector<std::shared_ptr<Cell> >)> closure;
+  mutable std::function<std::shared_ptr<Cell>(Sexp* self, Cell::CellEnv& dummy)> closure;
   mutable std::string val;
   mutable double real;
   Quoting quoting;
@@ -94,6 +95,7 @@ struct SymbolAtom : public Atom
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);
   static std::shared_ptr<SymbolAtom> New(); 
+  static std::shared_ptr<Atom> New(Cell::CellEnv& env, const std::string& name); 
   static std::list<std::shared_ptr<SymbolAtom> > gc;
   static std::list<std::shared_ptr<SymbolAtom> > pool;
   static void initGC();

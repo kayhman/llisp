@@ -58,10 +58,11 @@ template <typename Key, typename Val>
 template <typename Key, typename Val>
 typename std::map<Key,Val>::iterator Env<Key, Val>::end() const
 {
-  return this->top.end();
+    return this->top.end();
 }
 
 template<typename K, typename V> std::map<K, V> Env<K,V>::top;
+template<typename K, typename V> std::map<K, V> Env<K,V>::func;
 template<typename K, typename V> std::map<K, std::function<V(Sexp* sexp, Env<K,V>& env)> > Env<K,V>::evalHandlers;
 
 template class  Env<std::string,std::shared_ptr<Cell> >;

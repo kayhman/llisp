@@ -1,9 +1,10 @@
 #include <ostream>
 #include "cell.h"
 
-extern "C" void registerCoreHandlers(Cell::CellEnv env)
+extern "C" void registerCoreHandlers(Cell::CellEnv& env)
 {
-  env.evalHandlers["+"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> plus = SymbolAtom::New(env, "+");
+  plus->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = 0;
     std::for_each(sexp->cells.begin()+1, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real += cell->eval(env)->real;});
@@ -11,7 +12,8 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     return res;
   };
 
-  env.evalHandlers["-"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> minus = SymbolAtom::New(env, "-");
+  minus->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = sexp->cells[1]->eval(env)->real;
     std::for_each(sexp->cells.begin()+2, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real -= cell->eval(env)->real;});
@@ -19,7 +21,8 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     return res;
   };
 
-  env.evalHandlers["*"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> mult = SymbolAtom::New(env, "*");
+  mult->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = 1.0;
     std::for_each(sexp->cells.begin()+1, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real *= cell->eval(env)->real;});
@@ -27,14 +30,16 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     return res;
   };
 
-  env.evalHandlers["/"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> div = SymbolAtom::New(env, "/");
+  div->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = sexp->cells[1]->eval(env)->real;
     std::for_each(sexp->cells.begin()+2, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real /= cell->eval(env)->real;});
     return res;
   };
 
-   env.evalHandlers["<"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> inf = SymbolAtom::New(env, "<");
+  inf->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
    
@@ -49,7 +54,8 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     return res;
   };
 
-   env.evalHandlers[">"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> sup = SymbolAtom::New(env, ">");
+   sup->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
    
@@ -64,8 +70,8 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     return res;
   };
 
-
-  env.evalHandlers["eq"] = [](Sexp* sexp, Cell::CellEnv& env) {
+   std::shared_ptr<Atom> eq = SymbolAtom::New(env, "eq");
+   eq->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
     
@@ -77,7 +83,8 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     return res;
   };
 
-  env.evalHandlers["if"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> iff = SymbolAtom::New(env, "if");
+  iff->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> test = sexp->cells[1];
     std::shared_ptr<Cell> True = sexp->cells[2];
     std::shared_ptr<Cell> False = sexp->cells[3];
@@ -88,32 +95,43 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
       return False->eval(env);
   };
 
-  env.evalHandlers["quote"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> quote = SymbolAtom::New(env, "quote");
+  quote->closure = [](Sexp* sexp, Cell::CellEnv& env) {
       return sexp->cells[1];
   };
 
-  env.evalHandlers["backquote"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> backquote = SymbolAtom::New(env, "backquote");
+  backquote->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     return sexp->cells[1];
   };
 
-  env.evalHandlers["progn"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> progn = SymbolAtom::New(env, "progn");
+  progn->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::for_each(sexp->cells.begin()+1, sexp->cells.end()-1, [&](std::shared_ptr<Cell> cell){cell->eval(env);});
     return sexp->cells.back()->eval(env);
   };
 
-  env.evalHandlers["setq"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> setq = SymbolAtom::New(env, "setq");
+  setq->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     auto it = env.find(sexp->cells[1]->val);
+    auto res = sexp->cells[2]->eval(env);
+    std::cout << "setq " << *res << std::endl;
     if(it != env.end())
       {
-	it->second.reset();//reset(new Atom);
-	it->second = sexp->cells[2]->eval(env);
+	std::cout << "found" << std::endl;
+	it->second.reset();
+	it->second = res;
       }
     else
-      env[sexp->cells[1]->val] = sexp->cells[2]->eval(env);
-    return env[sexp->cells[1]->val];
+      {
+	std::cout << "create" << std::endl;
+	env[sexp->cells[1]->val] = res;
+      }
+    return res;
   };
 
-  env.evalHandlers["let"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> let = SymbolAtom::New(env, "let");
+  let->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Sexp> vars = std::dynamic_pointer_cast<Sexp>(sexp->cells[1]);
     std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]);
     
@@ -134,5 +152,4 @@ extern "C" void registerCoreHandlers(Cell::CellEnv env)
     env.removeEnv();
     return res;
   };
-  
 }

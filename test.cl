@@ -34,14 +34,13 @@ lapin
 
 (mymy lapin lapin)
 (setq lapin (mymy 1 2))
-(printenv)
 
 (+ lapin 0)
 (mymy lapin lapin)
 
 (lambda (a b) (+ a b))
 (setq lapin (lambda (a b) (+ a b)))
-(printenv)
+
 (funcall lapin 1 2)
 
 (funcall (lambda (a b) (+ a b)) 3 4)

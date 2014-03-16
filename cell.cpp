@@ -104,10 +104,11 @@ std::shared_ptr<Cell> StringAtom::eval(CellEnv& env)
 
 std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
 {
-  
+  std::cout << "eval " << this->val << std::endl;
   auto it = env.find(this->val);
-  if(it != env.end())
-      return it->second->eval(env);
+  //std::cout << "find  " << *it->second << std::endl;
+  if(it != env.end())// && it->second.get() != this)
+    return it->second->eval(env);
   else
     {
       return evaluated.lock();
@@ -116,72 +117,57 @@ std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
 
 std::shared_ptr<Sexp> Sexp::New()
 {
-  if(pool.size() == 0)
-    {
-      std::cout << "out of mem Sexp" << std::endl;
-      std::cout << "Free GC " << gc.size() << std::endl;
-      
-      exit(0);
-    }
-
-  std::shared_ptr<Sexp> sexp = pool.back();
-  pool.pop_back();
+  std::shared_ptr<Sexp> sexp(new Sexp);// = pool.back();
+  //pool.pop_back();
   sexp->evaluated = sexp;
-  gc.push_back(sexp);
+  //gc.push_back(sexp);
   return sexp;
 }
 
 std::shared_ptr<RealAtom> RealAtom::New()
 {
-  if(pool.size() == 0)
-    {
-      std::cout << "out of mem Real" << std::endl;
-      std::cout << "Free GC " << gc.size() << std::endl;
-      for(auto it = 0 ; i < gc.size() ; i++)
-        {
-          std::shared_ptr<RealAtom> r = gc[i];
-          if()
-        }
-      exit(0);
-    }
-
-  std::shared_ptr<RealAtom> atom = pool.back();
-  pool.pop_back();
+  std::shared_ptr<RealAtom> atom(new RealAtom);// = pool.back();
+  //  pool.pop_back();
   atom->evaluated = atom;
-  gc.push_back(atom);
+  //  gc.push_back(atom);
   return atom;
 }
 
 std::shared_ptr<StringAtom> StringAtom::New()
 {
-  if(pool.size() == 0)
-    {
-      std::cout << "out of mem String" << std::endl;
-      std::cout << "Free GC " << gc.size() << std::endl;
-      exit(0);
-    }
-
-  std::shared_ptr<StringAtom> atom = pool.back();
-  pool.pop_back();
+  std::shared_ptr<StringAtom> atom(new StringAtom);// = pool.back();
+  //pool.pop_back();
   atom->evaluated = atom;
-  gc.push_back(atom);
+  //gc.push_back(atom);
   return atom;
 }
 
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
-  if(pool.size() == 0)
-    {
-      std::cout << "out of mem Symb" << std::endl;
-      std::cout << "Free GC " << gc.size() << std::endl;
-      exit(0);
-    }
-
-  std::shared_ptr<SymbolAtom> atom = pool.back();
-  pool.pop_back();
+  std::shared_ptr<SymbolAtom> atom(new SymbolAtom);// = pool.back();
+  //  pool.pop_back();
   atom->evaluated = atom;
-  gc.push_back(atom);
+  //  gc.push_back(atom);
   return atom;
+}
+
+std::shared_ptr<Atom> SymbolAtom::New(Cell::CellEnv& env, const std::string& name)
+{
+  auto clIt = env.func.find(name);
+  if(clIt != env.func.end())
+    {
+      std::cout << "found " << name << " " << std::dynamic_pointer_cast<Atom>(clIt->second) << std::endl;
+      return std::dynamic_pointer_cast<Atom>(clIt->second);
+    }
+  else
+    {
+      std::shared_ptr<SymbolAtom> atom(new SymbolAtom);// = pool.back();
+      env.func[name] = atom;
+      //  pool.pop_back();
+      atom->evaluated = atom;
+      //  gc.push_back(atom);
+      return atom;
+    }
 }
 
 int loadHandlers(const std::string& lib, const std::string& handlerName, Cell::CellEnv& env)
@@ -218,6 +204,9 @@ int loadHandlers(const std::string& lib, const std::string& handlerName, Cell::C
 std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 {
   std::shared_ptr<Cell> cl = this->cells[0];
+  if(cl->closure)
+    return cl->closure(this, env);
+
   if(cl->val.compare("load") == 0)   
     {
       loadHandlers(this->cells[1]->eval(env)->val,
@@ -228,20 +217,25 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       return res;
     }
 
+  if(cl->val.compare("printenv") == 0)   
+    {
+      std::shared_ptr<Cell> res = StringAtom::New();
+      res->val = "printenv";
+      for(auto envIt = env.envs.rbegin() ; envIt != env.envs.rend() ; envIt++)
+	for(auto cIt = (*envIt)->begin() ; cIt != (*envIt)->end() ; cIt++)
+	  {
+	    std::shared_ptr<Cell> cell = (cIt->second); 
+	    std::cout << cIt->first << " -> " << *cell << std::endl;
+	  }
+      return res;
+  }
+
   auto evalIt = env.evalHandlers.find(cl->val);
   if(evalIt != env.evalHandlers.end())
     return (evalIt->second)(this, env);
+  
 
-  if(cl->val.compare("printenv") == 0)   
-    {
-      
-    }
-
-  auto clIt = env.top.find(cl->val);
-  if(clIt != env.end())
-    return  clIt->second->closure(this, std::vector<std::shared_ptr<Cell> >(this->cells.begin()+1, this->cells.end()));
-
-  return std::shared_ptr<Cell>(SymbolAtom::New());  
+  return std::shared_ptr<Cell>(StringAtom::New());    
 }
 
 void Sexp::initGC()

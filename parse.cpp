@@ -1,7 +1,7 @@
 #include "environment.h"
 #include "cell.h"
 
-std::shared_ptr<Cell> parse(std::istream& ss)
+std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 {
      bool newToken = false;
 
@@ -39,8 +39,18 @@ std::shared_ptr<Cell> parse(std::istream& ss)
                  Atom::Type type = Atom::computeType(buffer);
                  std::shared_ptr<Atom> at;;
                  if(type == Atom::Symbol)
-                   at = SymbolAtom::New();
-                 if(type == Atom::String)
+		   {
+		     if(sexp)
+		       {
+			 if(sexp->cells.size() == 0)
+			    at = SymbolAtom::New(env, buffer);
+			 else
+			   at = SymbolAtom::New();
+		       }
+		     else
+		       at = SymbolAtom::New();
+		   }
+		 if(type == Atom::String)
                    at = StringAtom::New();
                  if(type == Atom::Real)
                    at = RealAtom::New();
@@ -127,7 +137,7 @@ bool evalHelper(const std::string& code, Cell::CellEnv& env)
 {
   std::stringstream ss;
   ss << code << "\n";
-  std::shared_ptr<Cell> sexp = parse(ss);
+  std::shared_ptr<Cell> sexp = parse(ss, env);
   if(sexp)
     {
       std::cout << "> " << *sexp << std::endl;
@@ -137,12 +147,12 @@ bool evalHelper(const std::string& code, Cell::CellEnv& env)
   return false;
 }
 
-void loadFile(const std::string& file, Cell::CellEnv env)
+void loadFile(const std::string& file, Cell::CellEnv& env)
 {
   std::ifstream in(file);
   while(!in.eof())
     {                              
-      std::shared_ptr<Cell> sexp = parse(in);
+      std::shared_ptr<Cell> sexp = parse(in, env);
       if(sexp)
 	{
           std::cout << "> " << *sexp << std::endl;

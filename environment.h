@@ -10,10 +10,12 @@ template <typename Key, typename Val>
 class Env
 {
 public:
-  static std::map<Key,Val> top;
+  static std::map<Key,Val> func;
   static std::map<Key, std::function<Val(Sexp* sexp, Env& env)> > evalHandlers;
-private:
+  //private:
   std::vector<std::map<Key,Val>* > envs;
+ private:
+  static std::map<Key,Val> top;
 public:
   Val& operator[] (const Key& k);
   Val& operator[] (Key& k);

@@ -3,19 +3,20 @@
 
 extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 {
-  env.evalHandlers["defun"] = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Atom> fname = std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
+  std::shared_ptr<Atom> defun = SymbolAtom::New(env, "defun");
+  defun->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Atom> fname = SymbolAtom::New(env, sexp->cells[1]->val);//std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak
     std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(sexp->cells[3]); //weak
     
     if(args && body)
       {
-        env.top[fname->val] = fname; //handle recursive call
-	fname->closure = [env, args, body, fname](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
+        //env.top[fname->val] = fname; //handle recursive call
+	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& dummy) mutable {
 	  //assert(cls.size() == args->cells.size());
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
-	  for(int c = 0 ; c < cls.size() ; c++)
-	    newEnv[args->cells[c]->val] = cls[c]->eval(env); // Eval args before adding them to env (avoir infinite loop when defining recursive function)
+	  for(int c = 0 ; c < args->cells.size() ; c++)
+	    newEnv[args->cells[c]->val] = self->cells[c+1]->eval(env); // Eval args before adding them to env (avoir infinite loop when defining recursive function)
 	  
 	  //handle recursive call
 	  //newEnv[fname->val] = fname;
@@ -27,20 +28,20 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	};
       }
 
-    return env.top[fname->val];
+    return fname;
   };
 
-  env.evalHandlers["lambda"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> lambda = SymbolAtom::New(env, "lambda");
+  lambda->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Atom> lambda = std::dynamic_pointer_cast<Atom>(sexp->cells[0]);
     std::shared_ptr<Sexp> args =  std::dynamic_pointer_cast<Sexp>(sexp->cells[1]);
     std::shared_ptr<Sexp> body =  std::dynamic_pointer_cast<Sexp>(sexp->cells[2]);
     
     if(args && body) {
-      sexp->closure = [env,body, args](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
-	//assert(cls.size() == args->cells.size());
+      sexp->closure = [env,body, args](Sexp* self, Cell::CellEnv& dummy) mutable {
 	std::map<std::string, std::shared_ptr<Cell> > newEnv;
-	for(int c = 0 ; c < cls.size() ; c++)
-	  newEnv[args->cells[c]->val] = cls[c];
+	for(int c = 0 ; c < args->cells.size() ; c++)
+	  newEnv[args->cells[c]->val] = self->cells[c+2];
 	
 	env.addEnvMap(&newEnv);
 	std::shared_ptr<Cell> res = body->eval(env);
@@ -48,31 +49,33 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	return res;
       };
     }
-    
-    
+        
     std::shared_ptr<Cell> res = SymbolAtom::New();
-    res->val = "closure";
+    res->val = "lambda closure";
     res->closure = sexp->closure;
     
     return res;
   };
 
-  env.evalHandlers["funcall"] = [](Sexp* sexp, Cell::CellEnv& env)   {
+  std::shared_ptr<Atom> funcall = SymbolAtom::New(env, "funcall");
+  funcall->closure = [](Sexp* sexp, Cell::CellEnv& env)   {
     std::shared_ptr<Cell> lambda =  std::dynamic_pointer_cast<Cell>(sexp->cells[1])->eval(env);
+    std::cout << "funcall " << lambda->val << std::endl;
     
-    return  lambda->closure(lambda.get(), std::vector<std::shared_ptr<Cell> > (sexp->cells.begin()+2, sexp->cells.end()));
+    return  lambda->closure(sexp, env);
   };
 
-  env.evalHandlers["defmacro"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> defmacro = SymbolAtom::New(env, "defmacro");
+  defmacro->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Atom> fname = std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak
     std::shared_ptr<Cell> body = sexp->cells[3];
     
     if(args && body)
       {
-	fname->closure = [env, args, body, fname](Cell* self, std::vector<std::shared_ptr<Cell> > cls) mutable {
+	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& dummy) mutable {
 	  //assert(cls.size() == args->cells.size());
-	  
+	  std::vector<std::shared_ptr<Cell> > cls(self->cells.begin()+2, self->cells.end());	  
 	  std::stringstream ss;
 	  
 	  std::function<std::shared_ptr<Cell>(std::shared_ptr<Cell>, std::regex re, std::string s)> recursiveReplace = [&](std::shared_ptr<Cell> cell, std::regex re, std::string s)
@@ -123,7 +126,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	  return res;
 	};
       }
-    env.top[fname->val] = fname;
-    return env.top[fname->val];
+    env.func[fname->val] = fname;
+    return fname;
   };
 }
