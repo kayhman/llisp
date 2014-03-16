@@ -104,9 +104,7 @@ std::shared_ptr<Cell> StringAtom::eval(CellEnv& env)
 
 std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
 {
-  std::cout << "eval " << this->val << std::endl;
   auto it = env.find(this->val);
-  //std::cout << "find  " << *it->second << std::endl;
   if(it != env.end())// && it->second.get() != this)
     return it->second->eval(env);
   else
@@ -156,7 +154,6 @@ std::shared_ptr<Atom> SymbolAtom::New(Cell::CellEnv& env, const std::string& nam
   auto clIt = env.func.find(name);
   if(clIt != env.func.end())
     {
-      std::cout << "found " << name << " " << std::dynamic_pointer_cast<Atom>(clIt->second) << std::endl;
       return std::dynamic_pointer_cast<Atom>(clIt->second);
     }
   else

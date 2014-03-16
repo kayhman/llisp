@@ -3,7 +3,7 @@
 
 extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 {
-  std::shared_ptr<Atom> defun = SymbolAtom::New(env, "defun");
+  std::shared_ptr<Atom> defun = SymbolAtom::New(env, "defun"); //handle recursion
   defun->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Atom> fname = SymbolAtom::New(env, sexp->cells[1]->val);//std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak
@@ -11,15 +11,12 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     
     if(args && body)
       {
-        //env.top[fname->val] = fname; //handle recursive call
+
 	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& dummy) mutable {
 	  //assert(cls.size() == args->cells.size());
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	  for(int c = 0 ; c < args->cells.size() ; c++)
 	    newEnv[args->cells[c]->val] = self->cells[c+1]->eval(env); // Eval args before adding them to env (avoir infinite loop when defining recursive function)
-	  
-	  //handle recursive call
-	  //newEnv[fname->val] = fname;
 	  
 	  env.addEnvMap(&newEnv);
 	  std::shared_ptr<Cell> res = body->eval(env);
@@ -60,7 +57,6 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
   std::shared_ptr<Atom> funcall = SymbolAtom::New(env, "funcall");
   funcall->closure = [](Sexp* sexp, Cell::CellEnv& env)   {
     std::shared_ptr<Cell> lambda =  std::dynamic_pointer_cast<Cell>(sexp->cells[1])->eval(env);
-    std::cout << "funcall " << lambda->val << std::endl;
     
     return  lambda->closure(sexp, env);
   };
