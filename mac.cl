@@ -9,6 +9,6 @@
 
 (defun mydouble (a b)
   (double a b))
-
+(printenv)
 (mydouble 12 13)
 (mydouble 12 13)

@@ -2,7 +2,11 @@
 #include <dlfcn.h>
 
 bool isoperator(char c) {
-     std::string const valid_chars = "+*-/!=<>\"'`,";
+     std::string const valid_chars = "+*-/!=<>\"";
+     return valid_chars.find(c) != std::string::npos;
+}
+bool isquote(char c) {
+     std::string const valid_chars = "'`,";
      return valid_chars.find(c) != std::string::npos;
 }
 
@@ -64,6 +68,7 @@ std::ostream& operator<< (std::ostream& stream, const SymbolAtom& atom)
 
 Atom::Type Atom::computeType(const std::string& code)
 {
+  //  std::cout << "compuute type for " << code << std::endl;
   if(code.front() == '"' &&  code.back() == '"')
     return Atom::String;
   if(isdigit(code.front()) ||  
@@ -71,7 +76,8 @@ Atom::Type Atom::computeType(const std::string& code)
     return  Atom::Real;
   if(isdigit(code.front()) && code.size() == 1)
     return  Atom::Real;
-
+  
+  //  std::cout << " is symb" << std::endl; 
   return Atom::Symbol;
 }
 
@@ -218,12 +224,11 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
     {
       std::shared_ptr<Cell> res = StringAtom::New();
       res->val = "printenv";
-      for(auto envIt = env.envs.rbegin() ; envIt != env.envs.rend() ; envIt++)
-	for(auto cIt = (*envIt)->begin() ; cIt != (*envIt)->end() ; cIt++)
-	  {
-	    std::shared_ptr<Cell> cell = (cIt->second); 
-	    std::cout << cIt->first << " -> " << *cell << std::endl;
-	  }
+      for(auto cIt = env.func.begin() ; cIt != env.func.end() ; cIt++)
+	{
+	  std::shared_ptr<Cell> cell = (cIt->second); 
+	  std::cout << cIt->first << " -> " << *cell << std::endl;
+	}
       return res;
   }
 

@@ -42,7 +42,7 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		   {
 		     if(sexp)
 		       {
-			 if(sexp->cells.size() == 0)
+			 if(sexp->cells.size() == 0 && quoting == Cell::NoneQ)
 			    at = SymbolAtom::New(env, buffer);
 			 else
 			   at = SymbolAtom::New();
@@ -112,14 +112,14 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
                newToken = false;
           }
       
-          if(isalnum(ch) || isoperator(ch) || ch == '.')
+          if(isalnum(ch) || isoperator(ch) || isquote(ch) || ch == '.')
           {
             if(ch == '\'')
 	      quoting = Cell::Quote;
 	    else if(ch == '`')
               quoting = Cell::BackQuote;
             else
-              buffer.push_back(ch);
+	      buffer.push_back(ch);
           }
 
           if((sexps.size() == 0 && sexp != NULL) 

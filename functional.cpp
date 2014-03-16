@@ -63,7 +63,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 
   std::shared_ptr<Atom> defmacro = SymbolAtom::New(env, "defmacro");
   defmacro->closure = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Atom> fname = std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
+    std::shared_ptr<Atom> fname = SymbolAtom::New(env, sexp->cells[1]->val);//std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak
     std::shared_ptr<Cell> body = sexp->cells[3];
     
@@ -71,7 +71,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
       {
 	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& dummy) mutable {
 	  //assert(cls.size() == args->cells.size());
-	  std::vector<std::shared_ptr<Cell> > cls(self->cells.begin()+2, self->cells.end());	  
+	  std::vector<std::shared_ptr<Cell> > cls(self->cells.begin()+1, self->cells.end());	  
 	  std::stringstream ss;
 	  
 	  std::function<std::shared_ptr<Cell>(std::shared_ptr<Cell>, std::regex re, std::string s)> recursiveReplace = [&](std::shared_ptr<Cell> cell, std::regex re, std::string s)
@@ -87,7 +87,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 		    std::for_each(sexp->cells.begin(), sexp->cells.end(), [&](std::shared_ptr<Cell> cell){ newS->cells.push_back(recursiveReplace(cell, re, s));});
 		    
 		    if(sexp->cells[0]->val.compare("backquote") == 0)
-		      return newS->eval(env);
+		      return newS->cells[1]; //FIX : should call backquote symbol
 		    else
 		      return std::dynamic_pointer_cast<Cell>(newS);
 		  }
@@ -97,6 +97,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 		return atom->eval(env);
 	      }
 	  };
+
 	  for(int c = 0 ; c < cls.size() ; c++)
 	    {
 	      ss.str("");
@@ -110,12 +111,11 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	      std::regex re(ss.str());
 	      body = recursiveReplace(body, re, var);
 	    }
-	  
 	  Sexp* selfx = dynamic_cast<Sexp*>(self); //weak
 	  std::shared_ptr<Sexp> bodyx = std::dynamic_pointer_cast<Sexp>(body); //weak
 	  if(selfx && bodyx)
 	    selfx->cells = bodyx->cells;
-	  std::cout << "macro expansion " << *body << std::endl;
+
 	  
 	  std::shared_ptr<Cell> res = body->eval(env);
 	  

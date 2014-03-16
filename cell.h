@@ -14,6 +14,7 @@
 #include "environment.h"
 
 bool isoperator(char c);
+bool isquote(char c);
 struct Sexp;
 
 struct Cell

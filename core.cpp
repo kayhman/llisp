@@ -102,6 +102,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
 
   std::shared_ptr<Atom> backquote = SymbolAtom::New(env, "backquote");
   backquote->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::cout << "call backquote -> " << sexp->cells[1] << std::endl;
     return sexp->cells[1];
   };
 
