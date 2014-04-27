@@ -1,6 +1,6 @@
-CPP=clang++
+CPP=g++
 #CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -g
-CFLAGS=-std=c++11 -stdlib=libc++ -lcxxrt -ldl -O3
+CFLAGS=-std=c++11 -ldl -O3
 
 all: libenvironment.so libcell.so string.so core.so functional.so bench.so elisp
 	sudo cp libenvironment.so libcell.so /usr/local/lib
@@ -9,7 +9,7 @@ clean:
 	rm -rf *.so elisp
 
 elisp: parse.cpp libenvironment.so libcell.so
-	$(CPP) $(CFLAGS) -L. -lenvironment -lcell -o $@ $?
+	$(CPP) $(CFLAGS) -L. -lenvironment -lcell -o $@ $? -ldl
 
 libenvironment.so: environment.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
