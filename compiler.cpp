@@ -135,20 +135,8 @@ int compile()
     std::cout << "fib " << ffib(7) << std::endl;
 }
 
-
-llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
-		     llvm::IRBuilder<>& builder)
-{
-  const SymbolAtom* symb = dynamic_cast<const SymbolAtom*>(&cell);
-  const RealAtom* real = dynamic_cast<const RealAtom*>(&cell); 
-  const StringAtom* string = dynamic_cast<const StringAtom*>(&cell); 
-  if(symb)
-    return codegen(*symb, context, builder);
-  if(real)
-    return codegen(*real, context, builder);
-  if(string)
-    return codegen(*string, context, builder);
-}
+llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, 
+		     llvm::IRBuilder<>& builder);
 
 llvm::Value* codegen(const RealAtom& atom, llvm::LLVMContext& context,
 		     llvm::IRBuilder<>& builder)
@@ -162,6 +150,11 @@ llvm::Value* codegen(const StringAtom& atom, llvm::LLVMContext& context,
   return ConstantDataArray::getString(context, atom.val);
 }
 
+llvm::Value* codegen(const SymbolAtom& atom, llvm::LLVMContext& context,
+		     llvm::IRBuilder<>& builder)
+{
+  return ConstantDataArray::getString(context, atom.val);
+}
 
 llvm::Value* codegen(Sexp& sexp, llvm::LLVMContext& context, 
 		     llvm::IRBuilder<>& builder)
@@ -171,8 +164,41 @@ llvm::Value* codegen(Sexp& sexp, llvm::LLVMContext& context,
     {
       llvm::Value* sum = ConstantFP::get(context, APFloat(0.));
       for(int i = 1 ; i < sexp.cells.size() ; i++)
-	;//sum = builder.CreateFAdd(sum, codegen(*sexp.cells[i], context, builder), "addtmp");
+	sum = builder.CreateFAdd(sum, codegen(*sexp.cells[i], context, builder), "addtmp");
+      return sum;
     }
+}
+
+llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, 
+		     llvm::IRBuilder<>& builder)
+{
+  const SymbolAtom* symb = dynamic_cast<const SymbolAtom*>(&cell);
+  const RealAtom* real = dynamic_cast<const RealAtom*>(&cell); 
+  const StringAtom* string = dynamic_cast<const StringAtom*>(&cell);
+ 
+  if(symb)
+    return codegen(*symb, context, builder);
+  if(real)
+    return codegen(*real, context, builder);
+  if(string)
+    return codegen(*string, context, builder);
+}
+
+llvm::Value* compileBody(const Sexp& sexp, llvm::Module *module)
+{
+  llvm::LLVMContext& context = llvm::getGlobalContext();
+  llvm::IRBuilder<> builder(context);
+
+  Function* compiledF = cast<Function>(module->getOrInsertFunction("compiledF", Type::getInt32Ty(context), (Type *)0));
+
+  BasicBlock *RetBB = BasicBlock::Create(context, "return", compiledF);
+  
+  Value *One = ConstantInt::get(Type::getInt32Ty(context), 1);
+  Value *Two = ConstantInt::get(Type::getInt32Ty(context), 2);
+  Value *Sum = BinaryOperator::CreateAdd(One, Two, "add", RetBB);
+  ReturnInst::Create(context, Sum, RetBB);
+  
+  return compiledF;//codegen(sexp, context, builder);
 }
 
 extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
@@ -183,16 +209,18 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
   llvm::Module *module = new llvm::Module("elisp", context);
   llvm::IRBuilder<> builder(context);
 
+  std::cout << "module : " << module << std::endl;
+  module->dump();
 
   std::shared_ptr<Atom> compile = SymbolAtom::New(env, "compile");
-  compile->closure = [&](Sexp* sexp, Cell::CellEnv& env) {
+  compile->closure = [module](Sexp* sexp, Cell::CellEnv& env) {
     auto clIt = env.func.find(sexp->cells[1]->val);
     if(clIt != env.func.end())
       if(auto fun = static_cast<SymbolAtom*>(clIt->second.get()))
 	{
-	  std::cout << "compile " << std::endl;
-	  //	  codegen(*fun->code.get(), context, builder);
-	  //	  module->dump();
+	  std::cout << "compile " << module << std::endl;
+	  compileBody(dynamic_cast<Sexp&>(*fun->code.get()), module);
+	  module->dump();
 	  return fun->code;
 	}
     return sexp->cells[0];
