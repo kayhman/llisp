@@ -31,5 +31,16 @@ int main()
     typedef void (*PFN)();
     PFN pfn = reinterpret_cast<PFN>(ee->getPointerToFunction(func));
     pfn();
+
+    Function* f = ee->FindFunctionNamed("fib");
+    std::cout << "big " << f << std::endl;
+
+    //    typedef std::function<int(int)> fibType;
+    typedef int (*fibType)(int);
+    fibType ffib = reinterpret_cast<fibType>(ee->getPointerToFunction(f));
+    std::cout << "fib " << ffib(7) << std::endl;
+
+
+
     delete ee;
 }

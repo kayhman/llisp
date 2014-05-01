@@ -9,7 +9,6 @@
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
-#include "cell.h"
 #include <vector>
 #include <string>
 #include <iostream>
@@ -69,7 +68,7 @@ static Function *CreateFibFunction(Module *M, LLVMContext &Context) {
 }
 
 
-int main()
+int compile()
 {
  InitializeNativeTarget();
 
