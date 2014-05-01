@@ -189,7 +189,7 @@ llvm::Value* compileBody(const Sexp& sexp, llvm::Module *module)
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
 
-  Function* compiledF = cast<Function>(module->getOrInsertFunction("compiledF", Type::getInt32Ty(context), (Type *)0));
+  Function* compiledF = cast<Function>(module->getOrInsertFunction("compiledF", Type::getInt32Ty(context), Type::getInt32Ty(context), Type::getInt32Ty(context), (Type *)0));
 
   BasicBlock *RetBB = BasicBlock::Create(context, "return", compiledF);
   
@@ -243,9 +243,9 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  Function* f = EE->FindFunctionNamed("compiledF");
 	  std::cout << "func " << f << std::endl;
 
-	  typedef int (*fibType)();
+	  typedef int (*fibType)(int, int);
 	  fibType func = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
-	  std::cout << "func " << func() << std::endl;
+	  std::cout << "func " << func(2, 3) << std::endl;
 	  
 	  module->dump();
 	  return fun->code;
