@@ -8,7 +8,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     std::shared_ptr<Atom> fname = SymbolAtom::New(env, sexp->cells[1]->val);//std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak
     std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(sexp->cells[3]); //weak
-    
+    std::dynamic_pointer_cast<SymbolAtom>(fname)->code = body;
     if(args && body)
       {
 

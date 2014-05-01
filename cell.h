@@ -92,6 +92,7 @@ struct StringAtom : public Atom
 
 struct SymbolAtom : public Atom
 {
+  std::shared_ptr<Cell> code;
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);

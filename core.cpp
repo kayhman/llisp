@@ -100,6 +100,15 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
       return sexp->cells[1];
   };
 
+  std::shared_ptr<Atom> funcode = SymbolAtom::New(env, "funcode");
+  funcode->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    auto clIt = env.func.find(sexp->cells[1]->val);
+    if(clIt != env.func.end())
+      if(auto fun = std::dynamic_pointer_cast<SymbolAtom>(clIt->second))
+	  return fun->code;
+    return sexp->cells[0];
+  };
+
   std::shared_ptr<Atom> backquote = SymbolAtom::New(env, "backquote");
   backquote->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::cout << "call backquote -> " << sexp->cells[1] << std::endl;
