@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include "cell.h"
 
 using namespace llvm;
 
@@ -70,8 +71,8 @@ static Function *CreateFibFunction(Module *M, LLVMContext &Context) {
 
 int compile()
 {
- InitializeNativeTarget();
-
+  InitializeNativeTarget();
+  
   llvm::LLVMContext & context = llvm::getGlobalContext();
   llvm::Module *module = new llvm::Module("elisp", context);
   llvm::IRBuilder<> builder(context);
@@ -132,4 +133,68 @@ int compile()
   typedef int (*fibType)(int);
   fibType ffib = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
     std::cout << "fib " << ffib(7) << std::endl;
+}
+
+
+llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
+		     llvm::IRBuilder<>& builder)
+{
+  const SymbolAtom* symb = dynamic_cast<const SymbolAtom*>(&cell);
+  const RealAtom* real = dynamic_cast<const RealAtom*>(&cell); 
+  const StringAtom* string = dynamic_cast<const StringAtom*>(&cell); 
+  if(symb)
+    return codegen(*symb, context, builder);
+  if(real)
+    return codegen(*real, context, builder);
+  if(string)
+    return codegen(*string, context, builder);
+}
+
+llvm::Value* codegen(const RealAtom& atom, llvm::LLVMContext& context,
+		     llvm::IRBuilder<>& builder)
+{
+  return ConstantFP::get(context, APFloat(atom.real));
+}
+
+llvm::Value* codegen(const StringAtom& atom, llvm::LLVMContext& context,
+		     llvm::IRBuilder<>& builder)
+{
+  return ConstantDataArray::getString(context, atom.val);
+}
+
+
+llvm::Value* codegen(Sexp& sexp, llvm::LLVMContext& context, 
+		     llvm::IRBuilder<>& builder)
+{
+  std::shared_ptr<Cell> fun = sexp.cells[0];
+  if(fun->val.compare("+") == 0)
+    {
+      llvm::Value* sum = ConstantFP::get(context, APFloat(0.));
+      for(int i = 1 ; i < sexp.cells.size() ; i++)
+	;//sum = builder.CreateFAdd(sum, codegen(*sexp.cells[i], context, builder), "addtmp");
+    }
+}
+
+extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
+{
+  InitializeNativeTarget();
+  
+  llvm::LLVMContext& context = llvm::getGlobalContext();
+  llvm::Module *module = new llvm::Module("elisp", context);
+  llvm::IRBuilder<> builder(context);
+
+
+  std::shared_ptr<Atom> compile = SymbolAtom::New(env, "compile");
+  compile->closure = [&](Sexp* sexp, Cell::CellEnv& env) {
+    auto clIt = env.func.find(sexp->cells[1]->val);
+    if(clIt != env.func.end())
+      if(auto fun = static_cast<SymbolAtom*>(clIt->second.get()))
+	{
+	  std::cout << "compile " << std::endl;
+	  //	  codegen(*fun->code.get(), context, builder);
+	  //	  module->dump();
+	  return fun->code;
+	}
+    return sexp->cells[0];
+  };
 }

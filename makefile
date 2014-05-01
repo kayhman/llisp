@@ -1,11 +1,11 @@
 CPP=g++
 CFLAGS=-std=c++11 -ldl -O3
-LLVM_CFLAGS=`llvm-config --cxxflags`
+LLVM_CFLAGS=-I/usr/clang_3_5/include  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O3 -fomit-frame-pointer -fvisibility-inlines-hidden -fno-exceptions -fPIC -Woverloaded-virtual -ffunction-sections -fdata-sections -Wcast-qual
 LLVM_LIB=`llvm-config --libs`
 LLVM_LINK=`llvm-config --ldflags`
 
 
-all: libenvironment.so libcell.so string.so core.so functional.so bench.so elisp
+all: libenvironment.so libcell.so string.so core.so functional.so bench.so compiler.so elisp
 	sudo cp libenvironment.so libcell.so /usr/local/lib
 
 clean:
@@ -29,9 +29,12 @@ functional.so: functional.cpp
 bench.so: bench.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-compiler: compiler.cpp
-	$(CPP) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -pthread -ldl
+compiler.so: compiler.cpp
+	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl
+
+#compiler: compiler.cpp
+#	$(CPP) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -pthread -ldl
 
 
 elisp: parse.cpp compiler.cpp libenvironment.so libcell.so
-	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ compiler.cpp parse.cpp $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl
+	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ parse.cpp $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl

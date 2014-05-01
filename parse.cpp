@@ -177,6 +177,7 @@ int main(int argc, char* argv[])
   evalHelper("(load \"./functional.so\" \"registerFunctionalHandlers\")", env);
   evalHelper("(load \"./string.so\" \"registerStringHandlers\")", env);
   evalHelper("(load \"./bench.so\" \"registerBenchHandlers\")", env);
+  evalHelper("(load \"./compiler.so\" \"registerCompilerHandlers\")", env);
 
   if(argc == 2)
     loadFile(argv[1], env);
