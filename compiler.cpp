@@ -220,6 +220,33 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	{
 	  std::cout << "compile " << module << std::endl;
 	  compileBody(dynamic_cast<Sexp&>(*fun->code.get()), module);
+	  //std::vector<llvm::Type *> funArgs;
+	  //funArgs.push_back();
+	  //llvm::ArrayRef<llvm::Type*>  funRef(funArgs);
+	  
+	  //llvm::FunctionType *funType = llvm::FunctionType::get(builder.getInt32Ty(), argsRef, false);
+
+	   // Now we going to create JIT
+	  std::string errStr;
+	  ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
+
+	  if (!EE) {
+	    std::cout << ": Failed to construct ExecutionEngine: " << errStr
+		      << "\n";
+	  }
+	  std::cout << "verifying... ";
+	  if (verifyModule(*module)) {
+	    std::cout << ": Error constructing function!\n";
+
+	  }
+	  
+	  Function* f = EE->FindFunctionNamed("compiledF");
+	  std::cout << "func " << f << std::endl;
+
+	  typedef int (*fibType)();
+	  fibType func = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
+	  std::cout << "func " << func() << std::endl;
+	  
 	  module->dump();
 	  return fun->code;
 	}
