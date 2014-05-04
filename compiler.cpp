@@ -156,17 +156,21 @@ llvm::Value* codegen(const SymbolAtom& atom, llvm::LLVMContext& context,
   return ConstantDataArray::getString(context, atom.val);
 }
 
-llvm::Value* codegen(Sexp& sexp, llvm::LLVMContext& context, 
+llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context, 
 		     llvm::IRBuilder<>& builder)
 {
   std::shared_ptr<Cell> fun = sexp.cells[0];
+  std::cout << "codegen : " << fun->val << std::endl;
   if(fun->val.compare("+") == 0)
     {
       llvm::Value* sum = ConstantFP::get(context, APFloat(0.));
       for(int i = 1 ; i < sexp.cells.size() ; i++)
 	sum = builder.CreateFAdd(sum, codegen(*sexp.cells[i], context, builder), "addtmp");
+      std::cout << "---  sum " << std::endl;
+      sum->dump();
       return sum;
     }
+  return 0;
 }
 
 llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, 
@@ -176,12 +180,16 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
   const RealAtom* real = dynamic_cast<const RealAtom*>(&cell); 
   const StringAtom* string = dynamic_cast<const StringAtom*>(&cell);
  
+  std::cout << "s  " << symb << " r " << real << std::endl;
+
   if(symb)
     return codegen(*symb, context, builder);
   if(real)
     return codegen(*real, context, builder);
   if(string)
     return codegen(*string, context, builder);
+
+  return NULL;
 }
 
 llvm::Value* compileBody(const Sexp& sexp, llvm::Module *module)
@@ -193,12 +201,31 @@ llvm::Value* compileBody(const Sexp& sexp, llvm::Module *module)
 
   BasicBlock *RetBB = BasicBlock::Create(context, "return", compiledF);
   
-  Value *One = ConstantInt::get(Type::getInt32Ty(context), 1);
+  Value *One = ConstantInt::get(Type::getInt32Ty(context), 3);
   Value *Two = ConstantInt::get(Type::getInt32Ty(context), 2);
   Value *Sum = BinaryOperator::CreateAdd(One, Two, "add", RetBB);
+
   ReturnInst::Create(context, Sum, RetBB);
   
-  return compiledF;//codegen(sexp, context, builder);
+  ////
+  Function* execF = cast<Function>(module->getOrInsertFunction("execF", Type::getInt32Ty(context), (Type *)0));
+  BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "entry", execF);
+  builder.SetInsertPoint(BB);
+  
+  std::vector<Value*> ArgsV;
+  for (unsigned i = 0; i < 2; ++i) {
+    ArgsV.push_back(One);
+  }
+
+  //ReturnInst::Create(context, Sum, BB);
+  //builder.CreateRet(builder.CreateCall(compiledF, ArgsV, "calltmp"));
+  ///
+
+  Value* code = codegen(sexp, context, builder);
+  builder.CreateRet(code);
+  
+  
+  return execF;//compiledF;//codegen(sexp, context, builder);
 }
 
 extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
