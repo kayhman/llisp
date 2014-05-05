@@ -1,8 +1,9 @@
 CPP=g++
 CFLAGS=-std=c++11 -ldl -O3
-LLVM_CFLAGS=-I/usr/clang_3_5/include  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O3 -fomit-frame-pointer -fvisibility-inlines-hidden -fno-exceptions -fPIC -Woverloaded-virtual -ffunction-sections -fdata-sections -Wcast-qual
-LLVM_LIB=`llvm-config --libs`
-LLVM_LINK=`llvm-config --ldflags`
+LLVM_CFLAGS=-I/usr/lib/llvm-3.5/include  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O3 -fomit-frame-pointer -fvisibility-inlines-hidden -fno-exceptions -fPIC -Woverloaded-virtual -ffunction-sections -fdata-sections -Wcast-qual
+LLVM_CFLAGS=`llvm-config-3.5 --cflags`
+LLVM_LIB=`llvm-config-3.5 --libs`
+LLVM_LINK=`llvm-config-3.5 --ldflags`
 
 
 all: libenvironment.so libcell.so string.so core.so functional.so bench.so compiler.so elisp
