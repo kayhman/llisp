@@ -7,8 +7,7 @@ LLVM_LINK=`llvm-config-3.5 --ldflags`
 
 
 all: libenvironment.so libcell.so string.so core.so functional.so bench.so compiler.so elisp
-	sudo cp libenvironment.so libcell.so /usr/local/lib
-
+	
 clean:
 	rm -rf *.so elisp
 
@@ -31,7 +30,7 @@ bench.so: bench.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
 compiler.so: compiler.cpp
-	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl
+	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl -lffi
 
 #compiler: compiler.cpp
 #	$(CPP) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -pthread -ldl
