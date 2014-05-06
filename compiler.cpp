@@ -179,8 +179,9 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
   const SymbolAtom* symb = dynamic_cast<const SymbolAtom*>(&cell);
   const RealAtom* real = dynamic_cast<const RealAtom*>(&cell); 
   const StringAtom* string = dynamic_cast<const StringAtom*>(&cell);
+  const Sexp* sexp = dynamic_cast<const Sexp*>(&cell);
  
-  std::cout << "s  " << symb << " r " << real << std::endl;
+  std::cout << "s  " << symb << " r " << real << " sx " << sexp << std::endl;
 
   if(symb)
     return codegen(*symb, context, builder);
@@ -188,6 +189,8 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
     return codegen(*real, context, builder);
   if(string)
     return codegen(*string, context, builder);
+  if(sexp)
+    return codegen(*sexp, context, builder);
 
   return NULL;
 }
