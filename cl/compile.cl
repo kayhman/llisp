@@ -1,5 +1,5 @@
 (defun ab (a b)
-  (+ 1 2))
+  (+ 4 3))
 
 (defun fibo (N)
   (if (< N 2)
@@ -7,7 +7,7 @@
     (+ (fibo (- N 1))
        (fibo (- N 2)))))
 
-(ab 2 3)
+(ab 4 3)
 (funcode "ab")
 (funcode "fibo")
 (compile "ab")

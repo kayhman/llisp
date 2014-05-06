@@ -208,7 +208,7 @@ llvm::Value* compileBody(const Sexp& sexp, llvm::Module *module)
   ReturnInst::Create(context, Sum, RetBB);
   
   ////
-  Function* execF = cast<Function>(module->getOrInsertFunction("execF", Type::getInt32Ty(context), (Type *)0));
+  Function* execF = cast<Function>(module->getOrInsertFunction("execF", Type::getDoubleTy(context), (Type *)0));
   BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "entry", execF);
   builder.SetInsertPoint(BB);
   
@@ -269,11 +269,20 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  
 	  Function* f = EE->FindFunctionNamed("compiledF");
 	  std::cout << "func " << f << std::endl;
+	  Function* ff = EE->FindFunctionNamed("execF");
+	  std::cout << "execF " << ff << std::endl;
+
+
 
 	  typedef int (*fibType)(int, int);
 	  fibType func = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
-	  std::cout << "func " << func(2, 3) << std::endl;
+	  std::cout << "func " << func(5, 3) << std::endl;
 	  
+	  typedef double (*ExecF)();
+	  ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(ff));
+	  std::cout << "execF " << execF() << std::endl;
+	  
+
 	  module->dump();
 	  return fun->code;
 	}
