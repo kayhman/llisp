@@ -16,6 +16,8 @@
 
 using namespace llvm;
 
+static std::map<std::string, Value*> NamedValues;
+
 static Function *CreateFibFunction(Module *M, LLVMContext &Context) {
   // Create the fib function and insert it into module M. This function is said
   // to return an int and take an int parameter.
@@ -195,40 +197,46 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
   return NULL;
 }
 
-llvm::Value* compileBody(const Sexp& sexp, llvm::Module *module)
+llvm::Function* compileBody(const std::string& name, const Sexp& sexp, const std::vector<const Cell*> args, llvm::Module *module)
 {
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
 
-  Function* compiledF = cast<Function>(module->getOrInsertFunction("compiledF", Type::getInt32Ty(context), Type::getInt32Ty(context), Type::getInt32Ty(context), (Type *)0));
+  std::vector<Type*> argsType;
+  
+  for(int i = 0 ; i < 2/* args.size()*/ ; i++)
+    argsType.push_back(Type::getDoubleTy(context));
+  
+  FunctionType *FT = FunctionType::get(Type::getDoubleTy(context), argsType, false);
 
+  Function* compiledF = cast<Function>(module->getOrInsertFunction(name,  FT));
   BasicBlock *RetBB = BasicBlock::Create(context, "return", compiledF);
+  builder.SetInsertPoint(RetBB);
   
-  Value *One = ConstantInt::get(Type::getInt32Ty(context), 3);
-  Value *Two = ConstantInt::get(Type::getInt32Ty(context), 2);
-  Value *Sum = BinaryOperator::CreateAdd(One, Two, "add", RetBB);
+  Value* code = codegen(sexp, context, builder);
+  builder.CreateRet(code);
 
-  ReturnInst::Create(context, Sum, RetBB);
-  
-  ////
+  return compiledF;
+}
+
+
+llvm::Function* createCaller(Function* compiledF, const std::vector<const Cell*> args, llvm::Module *module)
+{
+  llvm::LLVMContext& context = llvm::getGlobalContext();
+  llvm::IRBuilder<> builder(context);
+
   Function* execF = cast<Function>(module->getOrInsertFunction("execF", Type::getDoubleTy(context), (Type *)0));
   BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "entry", execF);
   builder.SetInsertPoint(BB);
   
   std::vector<Value*> ArgsV;
-  for (unsigned i = 0; i < 2; ++i) {
-    ArgsV.push_back(One);
+  for (unsigned i = 0; i < args.size(); ++i) {
+    ArgsV.push_back(codegen(*args[i], context, builder));
   }
 
-  //ReturnInst::Create(context, Sum, BB);
-  //builder.CreateRet(builder.CreateCall(compiledF, ArgsV, "calltmp"));
-  ///
-
-  Value* code = codegen(sexp, context, builder);
-  builder.CreateRet(code);
-  
-  
-  return execF;//compiledF;//codegen(sexp, context, builder);
+  builder.CreateRet(builder.CreateCall(compiledF, ArgsV, "calltmp"));
+    
+  return execF;
 }
 
 extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
@@ -244,18 +252,17 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
   std::shared_ptr<Atom> compile = SymbolAtom::New(env, "compile");
   compile->closure = [module](Sexp* sexp, Cell::CellEnv& env) {
-    auto clIt = env.func.find(sexp->cells[1]->val);
+    const std::string& fname = sexp->cells[1]->val;
+    auto clIt = env.func.find(fname);
     if(clIt != env.func.end())
       if(auto fun = static_cast<SymbolAtom*>(clIt->second.get()))
 	{
-	  std::cout << "compile " << module << std::endl;
-	  compileBody(dynamic_cast<Sexp&>(*fun->code.get()), module);
-	  //std::vector<llvm::Type *> funArgs;
-	  //funArgs.push_back();
-	  //llvm::ArrayRef<llvm::Type*>  funRef(funArgs);
-	  
-	  //llvm::FunctionType *funType = llvm::FunctionType::get(builder.getInt32Ty(), argsRef, false);
-
+	  std::cout << "compile fonction " << sexp->cells.size()-1 << " in module " << module << std::endl;
+	  std::vector<const Cell*> args;
+	  for(int i = 1 ; i < sexp->cells.size() ; i++)
+	    args.push_back(sexp->cells[i].get());
+	  Function* bodyF = compileBody(fname, dynamic_cast<Sexp&>(*fun->code.get()), args, module);
+	  Function* callerF = createCaller(bodyF, args, module);
 	   // Now we going to create JIT
 	  std::string errStr;
 	  ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
@@ -270,7 +277,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
 	  }
 	  
-	  Function* f = EE->FindFunctionNamed("compiledF");
+	  Function* f = EE->FindFunctionNamed(fname.c_str());
 	  std::cout << "func " << f << std::endl;
 	  Function* ff = EE->FindFunctionNamed("execF");
 	  std::cout << "execF " << ff << std::endl;

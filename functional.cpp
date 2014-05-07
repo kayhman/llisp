@@ -16,7 +16,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	  //assert(cls.size() == args->cells.size());
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	  for(int c = 0 ; c < args->cells.size() ; c++)
-	    newEnv[args->cells[c]->val] = self->cells[c+1]->eval(env); // Eval args before adding them to env (avoir infinite loop when defining recursive function)
+	    newEnv[args->cells[c]->val] = self->cells[c+1]->eval(env); // Eval args before adding them to env (avoid infinite loop when defining recursive function)
 	  
 	  env.addEnvMap(&newEnv);
 	  std::shared_ptr<Cell> res = body->eval(env);
