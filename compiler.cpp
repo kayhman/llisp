@@ -18,125 +18,6 @@ using namespace llvm;
 
 static std::map<std::string, Value*> NamedValues;
 
-static Function *CreateFibFunction(Module *M, LLVMContext &Context) {
-  // Create the fib function and insert it into module M. This function is said
-  // to return an int and take an int parameter.
-  Function *FibF =
-    cast<Function>(M->getOrInsertFunction("fib", Type::getInt32Ty(Context),
-                                          Type::getInt32Ty(Context),
-                                          (Type *)0));
-
-  // Add a basic block to the function.
-  BasicBlock *BB = BasicBlock::Create(Context, "EntryBlock", FibF);
-
-  // Get pointers to the constants.
-  Value *One = ConstantInt::get(Type::getInt32Ty(Context), 1);
-  Value *Two = ConstantInt::get(Type::getInt32Ty(Context), 2);
-
-  // Get pointer to the integer argument of the add1 function...
-  Argument *ArgX = FibF->arg_begin();   // Get the arg.
-  ArgX->setName("AnArg");            // Give it a nice symbolic name for fun.
-
-  // Create the true_block.
-  BasicBlock *RetBB = BasicBlock::Create(Context, "return", FibF);
-  // Create an exit block.
-  BasicBlock* RecurseBB = BasicBlock::Create(Context, "recurse", FibF);
-
-  // Create the "if (arg <= 2) goto exitbb"
-  Value *CondInst = new ICmpInst(*BB, ICmpInst::ICMP_SLE, ArgX, Two, "cond");
-  BranchInst::Create(RetBB, RecurseBB, CondInst, BB);
-
-  // Create: ret int 1
-  ReturnInst::Create(Context, One, RetBB);
-
-  // create fib(x-1)
-  Value *Sub = BinaryOperator::CreateSub(ArgX, One, "arg", RecurseBB);
-  CallInst *CallFibX1 = CallInst::Create(FibF, Sub, "fibx1", RecurseBB);
-  CallFibX1->setTailCall();
-
-  // create fib(x-2)
-  Sub = BinaryOperator::CreateSub(ArgX, Two, "arg", RecurseBB);
-  CallInst *CallFibX2 = CallInst::Create(FibF, Sub, "fibx2", RecurseBB);
-  CallFibX2->setTailCall();
-
-
-  // fib(x-1)+fib(x-2)
-  Value *Sum = BinaryOperator::CreateAdd(CallFibX1, CallFibX2,
-                                         "addresult", RecurseBB);
-
-  // Create the return instruction and add it to the basic block
-  ReturnInst::Create(Context, Sum, RecurseBB);
-
-  return FibF;
-}
-
-
-int compile()
-{
-  InitializeNativeTarget();
-  
-  llvm::LLVMContext & context = llvm::getGlobalContext();
-  llvm::Module *module = new llvm::Module("elisp", context);
-  llvm::IRBuilder<> builder(context);
-
-  llvm::FunctionType *funcType = llvm::FunctionType::get(builder.getVoidTy(), false);
-  llvm::Function *FibF = CreateFibFunction(module, context);
-
-
-  llvm::Function *mainFunc = 
-    llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module);
-  llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entrypoint", mainFunc);
-  builder.SetInsertPoint(entry);
-  
-  llvm::Value *helloWorld = builder.CreateGlobalStringPtr("hello world!\n");
-
-  std::vector<llvm::Type *> putsArgs;
-  putsArgs.push_back(builder.getInt8Ty()->getPointerTo());
-  llvm::ArrayRef<llvm::Type*>  argsRef(putsArgs);
-
-  llvm::FunctionType *putsType = 
-    llvm::FunctionType::get(builder.getInt32Ty(), argsRef, false);
-  llvm::Constant *putsFunc = module->getOrInsertFunction("puts", putsType);
-  
-  llvm::Constant *FibConst = module->getOrInsertFunction("fib", Type::getInt32Ty(context),
-                                          Type::getInt32Ty(context),
-                                          (Type *)0);
-  
-  Value *fArg = ConstantInt::get(Type::getInt32Ty(context), 1);
-  
-  builder.CreateCall(putsFunc, helloWorld);
-  builder.CreateCall(FibConst, fArg);
-  builder.CreateRetVoid();
-  //module->dump();
-
-
-
- // Now we going to create JIT
-  std::string errStr;
-  ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
-
-  if (!EE) {
-    std::cout << ": Failed to construct ExecutionEngine: " << errStr
-           << "\n";
-    return 1;
-  }
-
-  std::cout << "verifying... ";
-  if (verifyModule(*module)) {
-    std::cout << ": Error constructing function!\n";
-    return 1;
-  }
-
-
-  Function* f = EE->FindFunctionNamed("fib");
-  std::cout << "big " << f << std::endl;
-  
-  //    typedef std::function<int(int)> fibType;
-  typedef int (*fibType)(int);
-  fibType ffib = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
-    std::cout << "fib " << ffib(7) << std::endl;
-}
-
 llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, 
 		     llvm::IRBuilder<>& builder);
 
@@ -228,9 +109,11 @@ llvm::Function* createCaller(Function* compiledF, const std::vector<const Cell*>
   Function* execF = cast<Function>(module->getOrInsertFunction("execF", Type::getDoubleTy(context), (Type *)0));
   BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "entry", execF);
   builder.SetInsertPoint(BB);
-  
+
+  std::cout << "  #args " << args.size() << std::endl;
   std::vector<Value*> ArgsV;
   for (unsigned i = 0; i < args.size(); ++i) {
+    std::cout << " ---- > add " << i << std::endl;
     ArgsV.push_back(codegen(*args[i], context, builder));
   }
 
@@ -262,7 +145,14 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  for(int i = 1 ; i < sexp->cells.size() ; i++)
 	    args.push_back(sexp->cells[i].get());
 	  Function* bodyF = compileBody(fname, dynamic_cast<Sexp&>(*fun->code.get()), args, module);
-	  Function* callerF = createCaller(bodyF, args, module);
+	  
+	  
+	  std::cout << "--------------------" << std::endl;
+	  module->dump();
+	  std::cout << "--------------------" << std::endl;
+
+
+
 	   // Now we going to create JIT
 	  std::string errStr;
 	  ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
@@ -279,21 +169,39 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  
 	  Function* f = EE->FindFunctionNamed(fname.c_str());
 	  std::cout << "func " << f << std::endl;
-	  Function* ff = EE->FindFunctionNamed("execF");
-	  std::cout << "execF " << ff << std::endl;
-
-
 
 	  typedef int (*fibType)(int, int);
 	  fibType func = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
 	  std::cout << "func " << func(5, 3) << std::endl;
 	  
-	  typedef double (*ExecF)();
-	  ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(ff));
-	  std::cout << "execF " << execF() << std::endl;
-	  
 
-	  module->dump();
+	  //replace evaluated closure by compiled code
+	  fun->closure = [env, bodyF, module](Sexp* self, Cell::CellEnv& dummy) mutable {
+	    std::vector<const Cell*> args;
+	    for(int i = 1 ; i < self->cells.size() ; i++)
+	      args.push_back(self->cells[i].get());
+
+	    Function* callerF = createCaller(bodyF, args, module);
+
+	    module->dump();
+
+	    std::string errStr;
+	    ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
+	    Function* ff = EE->FindFunctionNamed("execF");
+	    std::cout << "execF " << ff << std::endl;
+	    
+	    typedef double (*ExecF)();
+	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(ff));
+
+	    double out = execF();
+	    std::cout << "execF " << out << std::endl;
+	    
+	    std::shared_ptr<Cell> res(RealAtom::New());
+	    res->real = out;
+
+	    return res;
+	  };
+
 	  return fun->code;
 	}
     return sexp->cells[0];

@@ -11,3 +11,4 @@
 (funcode "ab")
 (funcode "fibo")
 (compile "ab")
+(ab 4 3)
