@@ -45,16 +45,38 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
 		     llvm::IRBuilder<>& builder)
 {
   std::shared_ptr<Cell> fun = sexp.cells[0];
-  std::cout << "codegen : " << fun->val << std::endl;
   if(fun->val.compare("+") == 0)
     {
-      llvm::Value* sum = ConstantFP::get(context, APFloat(0.));
-      for(int i = 1 ; i < sexp.cells.size() ; i++)
+      llvm::Value* sum = codegen(*sexp.cells[1], context, builder);
+      for(int i = 2 ; i < sexp.cells.size() ; i++)
 	sum = builder.CreateFAdd(sum, codegen(*sexp.cells[i], context, builder), "addtmp");
-      std::cout << "---  sum " << std::endl;
-      sum->dump();
       return sum;
     }
+
+  if(fun->val.compare("-") == 0)
+    {
+      llvm::Value* diff = codegen(*sexp.cells[1], context, builder);
+      for(int i = 2 ; i < sexp.cells.size() ; i++)
+	diff = builder.CreateFSub(diff, codegen(*sexp.cells[i], context, builder), "difftmp");
+      return diff;
+    }
+
+  if(fun->val.compare("*") == 0)
+    {
+      llvm::Value* prod = codegen(*sexp.cells[1], context, builder);
+      for(int i = 2 ; i < sexp.cells.size() ; i++)
+	prod = builder.CreateFMul(prod, codegen(*sexp.cells[i], context, builder), "addprod");
+      return prod;
+    }
+
+  if(fun->val.compare("/") == 0)
+    {
+      llvm::Value* div = codegen(*sexp.cells[1], context, builder);
+      for(int i = 2 ; i < sexp.cells.size() ; i++)
+	div = builder.CreateFDiv(div, codegen(*sexp.cells[i], context, builder), "divquot");
+      return div;
+    }
+
   return 0;
 }
 
@@ -88,8 +110,10 @@ llvm::Function* compileBody(const std::string& name, const Sexp& body, const std
 
   std::vector<Type*> argsType;
   
-  for(int i = 0 ; i < 2/* args.size()*/ ; i++)
-    argsType.push_back(Type::getDoubleTy(context));
+  for(int i = 0 ; i < args.size() ; i++)
+    {
+	argsType.push_back(Type::getDoubleTy(context));
+    }
   
   FunctionType *FT = FunctionType::get(Type::getDoubleTy(context), argsType, false);
 

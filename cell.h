@@ -50,7 +50,6 @@ struct Sexp : public Cell
 struct Atom : public Cell
 {
   enum Type {Symbol, Real, String};
-  // Type type;
   virtual ~Atom() {};  
   static Type computeType(const std::string& code);
   virtual void computeVal(const std::string& code) const = 0;
