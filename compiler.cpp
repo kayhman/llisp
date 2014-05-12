@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include "cell.h"
 
 using namespace llvm;
@@ -77,6 +78,16 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       return div;
     }
 
+
+  if(fun->val.compare("<") == 0)
+    {
+      Value* V0 = codegen(*sexp.cells[1], context, builder);
+      Value* V1 = codegen(*sexp.cells[2], context, builder);
+      V0 = builder.CreateFCmpULT(V0, V1, "cmptmp");
+      // Convert bool 0/1 to double 0.0 or 1.0
+      return builder.CreateUIToFP(V0, Type::getDoubleTy(context), "booltmp");
+    }
+
   return 0;
 }
 
@@ -136,12 +147,17 @@ llvm::Function* compileBody(const std::string& name, const Sexp& body, const std
 }
 
 
-llvm::Function* createCaller(Function* compiledF, const std::vector<std::shared_ptr<Cell> > args, llvm::Module *module)
+llvm::Function* createCaller(const std::string& name, Function* compiledF, const std::vector<std::shared_ptr<Cell> > args, llvm::Module *module)
 {
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
 
-  Function* execF = cast<Function>(module->getOrInsertFunction("execF", Type::getDoubleTy(context), (Type *)0));
+  Function* execF = cast<Function>(module->getOrInsertFunction(name.c_str(), Type::getDoubleTy(context), (Type *)0));
+  if(execF)
+    execF->removeFromParent();
+
+  execF = cast<Function>(module->getOrInsertFunction(name.c_str(), Type::getDoubleTy(context), (Type *)0));  
+
   BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "entry", execF);
   builder.SetInsertPoint(BB);
 
@@ -183,8 +199,6 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  //module->dump();
 	  //std::cout << "--------------------" << std::endl;
 
-
-
 	   // Now we going to create JIT
 	  std::string errStr;
 	  ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
@@ -205,9 +219,11 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  //	  fibType func = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
 
 	  //replace evaluated closure by compiled code
-	  fun->closure = [env, bodyF, module](Sexp* self, Cell::CellEnv& dummy) mutable {
+	  fun->closure = [env, fname, bodyF, module](Sexp* self, Cell::CellEnv& dummy) mutable {
 	    std::vector<std::shared_ptr<Cell> > args(self->cells.begin()+1, self->cells.end());  
-	    Function* callerF = createCaller(bodyF, args, module);
+	    std::stringstream ss;
+	    ss << fname << "_call";
+	    Function* callerF = createCaller(ss.str(), bodyF, args, module);
 
 	    //	    module->dump();
 
