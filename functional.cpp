@@ -9,6 +9,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak
     std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(sexp->cells[3]); //weak
     std::dynamic_pointer_cast<SymbolAtom>(fname)->code = body;
+    std::dynamic_pointer_cast<SymbolAtom>(fname)->args = args;
     if(args && body)
       {
 

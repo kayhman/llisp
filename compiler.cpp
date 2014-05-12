@@ -36,7 +36,9 @@ llvm::Value* codegen(const StringAtom& atom, llvm::LLVMContext& context,
 llvm::Value* codegen(const SymbolAtom& atom, llvm::LLVMContext& context,
 		     llvm::IRBuilder<>& builder)
 {
-  return ConstantDataArray::getString(context, atom.val);
+  Value* V = NamedValues[atom.val];
+  return V;// ? V : ErrorV("Unknown variable name");
+  //return ConstantDataArray::getString(context, atom.val);
 }
 
 llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context, 
@@ -78,8 +80,9 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
   return NULL;
 }
 
-llvm::Function* compileBody(const std::string& name, const Sexp& sexp, const std::vector<const Cell*> args, llvm::Module *module)
+llvm::Function* compileBody(const std::string& name, const Sexp& body, const std::vector<const Cell*> args, llvm::Module *module)
 {
+  NamedValues.clear();
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
 
@@ -91,10 +94,21 @@ llvm::Function* compileBody(const std::string& name, const Sexp& sexp, const std
   FunctionType *FT = FunctionType::get(Type::getDoubleTy(context), argsType, false);
 
   Function* compiledF = cast<Function>(module->getOrInsertFunction(name,  FT));
+
+  unsigned Idx = 0;
+  for (Function::arg_iterator AI = compiledF->arg_begin(); Idx != args.size(); ++AI, ++Idx) {
+    AI->setName(args[Idx]->val);
+    
+    // Add arguments to variable symbol table.
+    std::cout << "***** > add args " << args[Idx]->val << std::endl;
+    NamedValues[args[Idx]->val] = AI;
+  }
+
+
   BasicBlock *RetBB = BasicBlock::Create(context, "return", compiledF);
   builder.SetInsertPoint(RetBB);
   
-  Value* code = codegen(sexp, context, builder);
+  Value* code = codegen(body, context, builder);
   builder.CreateRet(code);
 
   return compiledF;
@@ -142,8 +156,9 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	{
 	  std::cout << "compile fonction " << sexp->cells.size()-1 << " in module " << module << std::endl;
 	  std::vector<const Cell*> args;
-	  for(int i = 1 ; i < sexp->cells.size() ; i++)
-	    args.push_back(sexp->cells[i].get());
+	  const Sexp* sArgs = dynamic_cast<const Sexp*>(fun->args.get());
+	  for(int i = 0 ; i <  sArgs->cells.size(); i++)
+	    args.push_back(sArgs->cells[i].get());
 	  Function* bodyF = compileBody(fname, dynamic_cast<Sexp&>(*fun->code.get()), args, module);
 	  
 	  
