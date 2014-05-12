@@ -88,6 +88,58 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       return builder.CreateUIToFP(V0, Type::getDoubleTy(context), "booltmp");
     }
 
+  if(fun->val.compare("if") == 0)
+    {
+      Value* cond = codegen(*sexp.cells[1], context, builder);
+
+      if (cond == 0) return 0;
+      
+      // Convert condition to a bool by comparing equal to 0.0.
+      cond = builder.CreateFCmpONE(cond, ConstantFP::get(context, APFloat(0.0)), "ifcond");
+      
+      Function *TheFunction = builder.GetInsertBlock()->getParent();
+      
+      // Create blocks for the then and else cases.  Insert the 'then' block at the
+      // end of the function.
+      BasicBlock *thenBB = BasicBlock::Create(context, "then", TheFunction);
+      BasicBlock *elseBB = BasicBlock::Create(context, "else");
+      BasicBlock *mergeBB = BasicBlock::Create(context, "ifcont");
+      
+      builder.CreateCondBr(cond, thenBB, elseBB);
+      
+      // Emit then value.
+      builder.SetInsertPoint(thenBB);
+      
+      Value *thenV = codegen(*sexp.cells[2], context, builder);
+      if (thenV == 0) return 0;
+      
+      builder.CreateBr(mergeBB);
+      // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
+      thenBB = builder.GetInsertBlock();
+      
+      // Emit else block.
+      TheFunction->getBasicBlockList().push_back(elseBB);
+      builder.SetInsertPoint(elseBB);
+      
+      Value *elseV = codegen(*sexp.cells[3], context, builder);
+      if (elseV == 0) return 0;
+      
+      builder.CreateBr(mergeBB);
+      // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
+      elseBB = builder.GetInsertBlock();
+      
+      // Emit merge block.
+      TheFunction->getBasicBlockList().push_back(mergeBB);
+      builder.SetInsertPoint(mergeBB);
+      PHINode *PN = builder.CreatePHI(Type::getDoubleTy(context), 2, "iftmp");
+      
+      PN->addIncoming(thenV, thenBB);
+      PN->addIncoming(elseV, elseBB);
+      return PN;
+    }
+
+
+
   return 0;
 }
 

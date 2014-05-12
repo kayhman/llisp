@@ -4,6 +4,11 @@
 (defun bb (a b)
   (< a b))
 
+(defun cc (a b)
+  (if (< a b) 
+	a 
+	b))
+
 
 (defun fibo (N)
   (if (< N 2)
@@ -20,3 +25,7 @@
 (compile "bb")
 (bb 13 16)
 (bb 18 16)
+
+(compile "cc")
+(cc 3 4)
+(cc 4 3)
