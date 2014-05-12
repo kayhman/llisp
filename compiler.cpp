@@ -136,7 +136,7 @@ llvm::Function* compileBody(const std::string& name, const Sexp& body, const std
 }
 
 
-llvm::Function* createCaller(Function* compiledF, const std::vector<const Cell*> args, llvm::Module *module)
+llvm::Function* createCaller(Function* compiledF, const std::vector<std::shared_ptr<Cell> > args, llvm::Module *module)
 {
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
@@ -206,20 +206,16 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
 	  //replace evaluated closure by compiled code
 	  fun->closure = [env, bodyF, module](Sexp* self, Cell::CellEnv& dummy) mutable {
-	    std::vector<const Cell*> args;
-	    for(int i = 1 ; i < self->cells.size() ; i++)
-	      args.push_back(self->cells[i].get());
-
+	    std::vector<std::shared_ptr<Cell> > args(self->cells.begin()+1, self->cells.end());  
 	    Function* callerF = createCaller(bodyF, args, module);
 
 	    //	    module->dump();
 
 	    std::string errStr;
 	    ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
-	    Function* ff = EE->FindFunctionNamed("execF");
-	    
+	    	    
 	    typedef double (*ExecF)();
-	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(ff));
+	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
 
 	    std::shared_ptr<Cell> res(RealAtom::New());
 	    res->real = execF();
