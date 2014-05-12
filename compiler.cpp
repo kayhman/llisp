@@ -88,8 +88,6 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
   const StringAtom* string = dynamic_cast<const StringAtom*>(&cell);
   const Sexp* sexp = dynamic_cast<const Sexp*>(&cell);
  
-  std::cout << "s  " << symb << " r " << real << " sx " << sexp << std::endl;
-
   if(symb)
     return codegen(*symb, context, builder);
   if(real)
@@ -124,7 +122,6 @@ llvm::Function* compileBody(const std::string& name, const Sexp& body, const std
     AI->setName(args[Idx]->val);
     
     // Add arguments to variable symbol table.
-    std::cout << "***** > add args " << args[Idx]->val << std::endl;
     NamedValues[args[Idx]->val] = AI;
   }
 
@@ -148,10 +145,8 @@ llvm::Function* createCaller(Function* compiledF, const std::vector<const Cell*>
   BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "entry", execF);
   builder.SetInsertPoint(BB);
 
-  std::cout << "  #args " << args.size() << std::endl;
   std::vector<Value*> ArgsV;
   for (unsigned i = 0; i < args.size(); ++i) {
-    std::cout << " ---- > add " << i << std::endl;
     ArgsV.push_back(codegen(*args[i], context, builder));
   }
 
@@ -168,8 +163,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
   llvm::Module *module = new llvm::Module("elisp", context);
   llvm::IRBuilder<> builder(context);
 
-  std::cout << "module : " << module << std::endl;
-  module->dump();
+  //module->dump();
 
   std::shared_ptr<Atom> compile = SymbolAtom::New(env, "compile");
   compile->closure = [module](Sexp* sexp, Cell::CellEnv& env) {
@@ -178,7 +172,6 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
     if(clIt != env.func.end())
       if(auto fun = static_cast<SymbolAtom*>(clIt->second.get()))
 	{
-	  std::cout << "compile fonction " << sexp->cells.size()-1 << " in module " << module << std::endl;
 	  std::vector<const Cell*> args;
 	  const Sexp* sArgs = dynamic_cast<const Sexp*>(fun->args.get());
 	  for(int i = 0 ; i <  sArgs->cells.size(); i++)
@@ -186,9 +179,9 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  Function* bodyF = compileBody(fname, dynamic_cast<Sexp&>(*fun->code.get()), args, module);
 	  
 	  
-	  std::cout << "--------------------" << std::endl;
-	  module->dump();
-	  std::cout << "--------------------" << std::endl;
+	  //std::cout << "--------------------" << std::endl;
+	  //module->dump();
+	  //std::cout << "--------------------" << std::endl;
 
 
 
@@ -207,12 +200,9 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  }
 	  
 	  Function* f = EE->FindFunctionNamed(fname.c_str());
-	  std::cout << "func " << f << std::endl;
 
 	  typedef int (*fibType)(int, int);
-	  fibType func = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
-	  std::cout << "func " << func(5, 3) << std::endl;
-	  
+	  //	  fibType func = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
 
 	  //replace evaluated closure by compiled code
 	  fun->closure = [env, bodyF, module](Sexp* self, Cell::CellEnv& dummy) mutable {
@@ -222,21 +212,17 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
 	    Function* callerF = createCaller(bodyF, args, module);
 
-	    module->dump();
+	    //	    module->dump();
 
 	    std::string errStr;
 	    ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
 	    Function* ff = EE->FindFunctionNamed("execF");
-	    std::cout << "execF " << ff << std::endl;
 	    
 	    typedef double (*ExecF)();
 	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(ff));
 
-	    double out = execF();
-	    std::cout << "execF " << out << std::endl;
-	    
 	    std::shared_ptr<Cell> res(RealAtom::New());
-	    res->real = out;
+	    res->real = execF();
 
 	    return res;
 	  };
