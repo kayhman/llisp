@@ -19,23 +19,19 @@ using namespace llvm;
 
 static std::map<std::string, Value*> NamedValues;
 
-llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, 
-		     llvm::IRBuilder<>& builder);
+llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, llvm::IRBuilder<>& builder, llvm::Module *module);
 
-llvm::Value* codegen(const RealAtom& atom, llvm::LLVMContext& context,
-		     llvm::IRBuilder<>& builder)
+llvm::Value* codegen(const RealAtom& atom, llvm::LLVMContext& context, llvm::IRBuilder<>& builder, llvm::Module *module)
 {
   return ConstantFP::get(context, APFloat(atom.real));
 }
 
-llvm::Value* codegen(const StringAtom& atom, llvm::LLVMContext& context,
-		     llvm::IRBuilder<>& builder)
+llvm::Value* codegen(const StringAtom& atom, llvm::LLVMContext& context, llvm::IRBuilder<>& builder, llvm::Module *module)
 {
   return ConstantDataArray::getString(context, atom.val);
 }
 
-llvm::Value* codegen(const SymbolAtom& atom, llvm::LLVMContext& context,
-		     llvm::IRBuilder<>& builder)
+llvm::Value* codegen(const SymbolAtom& atom, llvm::LLVMContext& context, llvm::IRBuilder<>& builder,llvm::Module *module)
 {
   Value* V = NamedValues[atom.val];
   return V;// ? V : ErrorV("Unknown variable name");
@@ -43,46 +39,46 @@ llvm::Value* codegen(const SymbolAtom& atom, llvm::LLVMContext& context,
 }
 
 llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context, 
-		     llvm::IRBuilder<>& builder)
+		     llvm::IRBuilder<>& builder, llvm::Module *module)
 {
   std::shared_ptr<Cell> fun = sexp.cells[0];
   if(fun->val.compare("+") == 0)
     {
-      llvm::Value* sum = codegen(*sexp.cells[1], context, builder);
+      llvm::Value* sum = codegen(*sexp.cells[1], context, builder, module);
       for(int i = 2 ; i < sexp.cells.size() ; i++)
-	sum = builder.CreateFAdd(sum, codegen(*sexp.cells[i], context, builder), "addtmp");
+	sum = builder.CreateFAdd(sum, codegen(*sexp.cells[i], context, builder, module), "addtmp");
       return sum;
     }
 
   if(fun->val.compare("-") == 0)
     {
-      llvm::Value* diff = codegen(*sexp.cells[1], context, builder);
+      llvm::Value* diff = codegen(*sexp.cells[1], context, builder, module);
       for(int i = 2 ; i < sexp.cells.size() ; i++)
-	diff = builder.CreateFSub(diff, codegen(*sexp.cells[i], context, builder), "difftmp");
+	diff = builder.CreateFSub(diff, codegen(*sexp.cells[i], context, builder, module), "difftmp");
       return diff;
     }
 
   if(fun->val.compare("*") == 0)
     {
-      llvm::Value* prod = codegen(*sexp.cells[1], context, builder);
+      llvm::Value* prod = codegen(*sexp.cells[1], context, builder, module);
       for(int i = 2 ; i < sexp.cells.size() ; i++)
-	prod = builder.CreateFMul(prod, codegen(*sexp.cells[i], context, builder), "addprod");
+	prod = builder.CreateFMul(prod, codegen(*sexp.cells[i], context, builder, module), "addprod");
       return prod;
     }
 
   if(fun->val.compare("/") == 0)
     {
-      llvm::Value* div = codegen(*sexp.cells[1], context, builder);
+      llvm::Value* div = codegen(*sexp.cells[1], context, builder, module);
       for(int i = 2 ; i < sexp.cells.size() ; i++)
-	div = builder.CreateFDiv(div, codegen(*sexp.cells[i], context, builder), "divquot");
+	div = builder.CreateFDiv(div, codegen(*sexp.cells[i], context, builder, module), "divquot");
       return div;
     }
 
 
   if(fun->val.compare("<") == 0)
     {
-      Value* V0 = codegen(*sexp.cells[1], context, builder);
-      Value* V1 = codegen(*sexp.cells[2], context, builder);
+      Value* V0 = codegen(*sexp.cells[1], context, builder, module);
+      Value* V1 = codegen(*sexp.cells[2], context, builder, module);
       V0 = builder.CreateFCmpULT(V0, V1, "cmptmp");
       // Convert bool 0/1 to double 0.0 or 1.0
       return builder.CreateUIToFP(V0, Type::getDoubleTy(context), "booltmp");
@@ -90,7 +86,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
 
   if(fun->val.compare("if") == 0)
     {
-      Value* cond = codegen(*sexp.cells[1], context, builder);
+      Value* cond = codegen(*sexp.cells[1], context, builder, module);
 
       if (cond == 0) return 0;
       
@@ -110,7 +106,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       // Emit then value.
       builder.SetInsertPoint(thenBB);
       
-      Value *thenV = codegen(*sexp.cells[2], context, builder);
+      Value *thenV = codegen(*sexp.cells[2], context, builder, module);
       if (thenV == 0) return 0;
       
       builder.CreateBr(mergeBB);
@@ -121,7 +117,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       TheFunction->getBasicBlockList().push_back(elseBB);
       builder.SetInsertPoint(elseBB);
       
-      Value *elseV = codegen(*sexp.cells[3], context, builder);
+      Value *elseV = codegen(*sexp.cells[3], context, builder, module);
       if (elseV == 0) return 0;
       
       builder.CreateBr(mergeBB);
@@ -138,13 +134,26 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       return PN;
     }
 
+  if(SymbolAtom* symbol = dynamic_cast<SymbolAtom*>(fun.get()))
+    {
+      Function* F = module->getFunction(symbol->val);
 
+      std::vector<Value*> ArgsV;
+      for (unsigned i = 1; i < sexp.cells.size(); ++i) {
+	ArgsV.push_back(codegen(*sexp.cells[i], context, builder, module));
+      }
+      
+      CallInst *call = builder.CreateCall(F, ArgsV, "calltmp");
+      call->setTailCall();
+      return call;
+      //return builder.CreateRet(call);
+      }
 
   return 0;
 }
 
 llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, 
-		     llvm::IRBuilder<>& builder)
+		     llvm::IRBuilder<>& builder, llvm::Module *module)
 {
   const SymbolAtom* symb = dynamic_cast<const SymbolAtom*>(&cell);
   const RealAtom* real = dynamic_cast<const RealAtom*>(&cell); 
@@ -152,13 +161,13 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
   const Sexp* sexp = dynamic_cast<const Sexp*>(&cell);
  
   if(symb)
-    return codegen(*symb, context, builder);
+    return codegen(*symb, context, builder, module);
   if(real)
-    return codegen(*real, context, builder);
+    return codegen(*real, context, builder, module);
   if(string)
-    return codegen(*string, context, builder);
+    return codegen(*string, context, builder, module);
   if(sexp)
-    return codegen(*sexp, context, builder);
+    return codegen(*sexp, context, builder, module);
 
   return NULL;
 }
@@ -192,7 +201,7 @@ llvm::Function* compileBody(const std::string& name, const Sexp& body, const std
   BasicBlock *RetBB = BasicBlock::Create(context, "return", compiledF);
   builder.SetInsertPoint(RetBB);
   
-  Value* code = codegen(body, context, builder);
+  Value* code = codegen(body, context, builder, module);
   builder.CreateRet(code);
 
   return compiledF;
@@ -215,7 +224,7 @@ llvm::Function* createCaller(const std::string& name, Function* compiledF, const
 
   std::vector<Value*> ArgsV;
   for (unsigned i = 0; i < args.size(); ++i) {
-    ArgsV.push_back(codegen(*args[i], context, builder));
+    ArgsV.push_back(codegen(*args[i], context, builder, module));
   }
 
   builder.CreateRet(builder.CreateCall(compiledF, ArgsV, "calltmp"));

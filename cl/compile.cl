@@ -10,22 +10,35 @@
 	b))
 
 
+(defun fibo0 (N)
+  (if (< N 2)
+    1
+    (+ (fibo (- N 1))
+       (- N 2))))
+
 (defun fibo (N)
   (if (< N 2)
     1
     (+ (fibo (- N 1))
        (fibo (- N 2)))))
 
+
 (time (ab 5 3))
-(compile "ab")
+
 (time (ab 5 3))
 (time (ab 6 8))
 
 (bb 12 16)
-(compile "bb")
+
 (bb 13 16)
 (bb 18 16)
 
 (compile "cc")
 (cc 3 4)
 (cc 4 3)
+
+(time (fibo 25))
+(compile "fibo")
+
+(time (fibo 25))
+(time (fibo 25))
