@@ -187,10 +187,18 @@ int main(int argc, char* argv[])
       std::cout << (curLine.size() ? "     > " : "elisp> ");
       std::getline(std::cin, in);
       if(std::cin.eof())
-        {
+			 {
           std::cout << "goobye" << std::endl;
           break;
         }
+			size_t posc = in.find(";");
+			size_t posp = in.find("(");
+      if(posc < posp)
+        {
+          std::cout << "skip comment" << std::endl;
+					continue;
+        }
+ 
       curLine += " " +  in;
       if(evalHelper(curLine, env))
         curLine = "";

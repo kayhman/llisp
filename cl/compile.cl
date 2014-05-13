@@ -47,6 +47,7 @@
 (dd 4 3)
 
 (time (fibo 25))
+;(time (fibo 40))
 (compile "fibo")
 
 (time (fibo 25))
