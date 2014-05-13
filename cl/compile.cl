@@ -9,6 +9,11 @@
 	a 
 	b))
 
+(defun dd (a b)
+  (if (> a b) 
+	a 
+	b))
+
 
 (defun fibo0 (N)
   (if (< N 2)
@@ -36,6 +41,10 @@
 (compile "cc")
 (cc 3 4)
 (cc 4 3)
+
+(compile "dd")
+(dd 3 4)
+(dd 4 3)
 
 (time (fibo 25))
 (compile "fibo")

@@ -84,6 +84,15 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       return builder.CreateUIToFP(V0, Type::getDoubleTy(context), "booltmp");
     }
 
+  if(fun->val.compare(">") == 0)
+    {
+      Value* V0 = codegen(*sexp.cells[1], context, builder, module);
+      Value* V1 = codegen(*sexp.cells[2], context, builder, module);
+      V0 = builder.CreateFCmpUGT(V0, V1, "cmptmp");
+      // Convert bool 0/1 to double 0.0 or 1.0
+      return builder.CreateUIToFP(V0, Type::getDoubleTy(context), "booltmp");
+    }
+
   if(fun->val.compare("if") == 0)
     {
       Value* cond = codegen(*sexp.cells[1], context, builder, module);
