@@ -1,5 +1,13 @@
-* Todos 
+* [General] 
 ** Support trace
 ** Support debug
 ** Use only three types : list, symbol, numbers
 ** add support for socket
+* [Compilation]
+** Créér une fonction llvm pour chaque fonction standard
+*** but -> permettre l'appel de fonctions interprétées depuis des fonctions compilées.
+** Déterminer le type de retour d'une fonction compilée.
+* org-mode configuration
+#+SEQ_TODO: TODO(t) STARTED(s) WAITING(w) APPT(a) | DONE(d) CANCELLED(c) DEFERRED(f)
+#+STARTUP: hidestars
+#+STARTUP: content
