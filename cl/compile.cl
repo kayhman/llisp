@@ -47,8 +47,17 @@
 (dd 4 3)
 
 (time (fibo 25))
-;(time (fibo 40))
 (compile "fibo")
 
 (time (fibo 25))
 (time (fibo 40))
+
+(defun ff (a b)
+	(test 1 1))
+
+(defun gg (a b)
+	(test 1 1))
+
+(compile "ff")
+(compile "gg")
+(gg 1 2)

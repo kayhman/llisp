@@ -1,6 +1,7 @@
 #include <ostream>
 #include "cell.h"
 
+
 extern "C" void registerCoreHandlers(Cell::CellEnv& env)
 {
   std::shared_ptr<Atom> plus = SymbolAtom::New(env, "+");

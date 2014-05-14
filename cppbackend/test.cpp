@@ -7,17 +7,15 @@ class Env
 {};
 
 
-Sexp* boubou(void* s, void* env)
-{
-	return 0;
-}
+
+extern "C" Sexp* boubou(void* s, void* env);
+extern "C" void* bubu;
 
 
 int main()
 {
 	Sexp s;
 	Env env;
-
-	boubou(&s, &env);
+	boubou(bubu, NULL);
 	return 0;
 }

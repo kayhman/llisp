@@ -1,4 +1,4 @@
-$#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Function.h"
@@ -18,6 +18,17 @@ $#include "llvm/ADT/ArrayRef.h"
 using namespace llvm;
 
 static std::map<std::string, Value*> NamedValues;
+ExecutionEngine *EE = NULL;
+
+extern "C" double boubou(void* sexp, void* env)
+{
+  std::cout << "call boubou" << std::endl;
+  std::cout << "sexp " << sexp  << std::endl;
+  return 0.666;
+}
+
+extern "C" void* sexp2;// = NULL;
+
 
 llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, llvm::IRBuilder<>& builder, llvm::Module *module);
 
@@ -143,6 +154,59 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       return PN;
     }
 
+  if(fun->val.compare("test") == 0)
+    {
+      
+      
+      PointerType* voidPtr = PointerType::get(IntegerType::get(context, 8), 0);
+
+      std::vector<Type*> Ftype;
+      Ftype.push_back(voidPtr);
+      Ftype.push_back(voidPtr);
+      //FunctionType *FT = FunctionType::get(Type::getDoubleTy(context), argsType, false);
+      FunctionType *FT = FunctionType::get(Type::getDoubleTy(context),Ftype,false);
+      //Function *F = Function::Create(FT,Function::ExternalLinkage,"boubou",module);
+      Function* F = cast<Function>(module->getOrInsertFunction("boubou",  FT));
+
+      F->setCallingConv(CallingConv::C);
+      EE->addGlobalMapping(F, (void*)&boubou);
+      
+      std::vector<Value*> ArgsV;
+      ConstantPointerNull* nullPtr = ConstantPointerNull::get(voidPtr);
+      //Constant* Ptr0Add = ConstantInt::get(Type::getInt32Ty(context), (int)&sexp);
+      //Constant* Ptr0 = ConstantExpr::getGetElementPtr(, Ptr0Add);
+      //ConstantInt* const_int64_29 = ConstantInt::get(mod->getContext(), APInt(64, StringRef("12536"), 10));
+
+      sexp2 = (void*)&sexp;
+      static GlobalVariable* Ptr0GV = new GlobalVariable(*module,
+                                                  voidPtr,
+                                                  false,
+                                                  GlobalValue::ExternalLinkage,
+                                                  0,
+                                                  "sexp2");
+
+      LoadInst* ptr0 = builder.CreateLoad(Ptr0GV, "");
+      ptr0->setAlignment(8);
+      std::cout << "ptr 0" << sexp2 << std::endl;
+
+      ArgsV.push_back(ptr0);
+      ArgsV.push_back(nullPtr);
+
+      //std::vector<GenericValue> ArgsGV(2);
+      //ArgsGV.push_back(nullPtr);
+      //ArgsGV.push_back(nullPtr);
+       //GenericValue gv = EE->runFunction(F, ArgsGV);
+      
+      // Import result of execution:
+      //std::cout << "Result: " << gv.DoubleVal << "\n";
+
+
+      CallInst *call = builder.CreateCall(F, ArgsV, "calltmp");
+
+      //module->dump();
+      return call;
+    }
+
   if(SymbolAtom* symbol = dynamic_cast<SymbolAtom*>(fun.get()))
     {
       Function* F = module->getFunction(symbol->val);
@@ -240,16 +304,20 @@ llvm::Function* createCaller(const std::string& name, Function* compiledF, const
   return execF;
 }
 
+
 extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 {
   InitializeNativeTarget();
-  
+   
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::Module *module = new llvm::Module("elisp", context);
   llvm::IRBuilder<> builder(context);
+  std::string errStr;
+  EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
+  if (!EE) 
+    std::cout << ": Failed to construct ExecutionEngine: " << errStr << std::endl;
 
-  //module->dump();
-
+  
   std::shared_ptr<Atom> compile = SymbolAtom::New(env, "compile");
   compile->closure = [module](Sexp* sexp, Cell::CellEnv& env) {
     const std::string& fname = sexp->cells[1]->val;
@@ -269,13 +337,8 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  //std::cout << "--------------------" << std::endl;
 
 	   // Now we going to create JIT
-	  std::string errStr;
-	  ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
 
-	  if (!EE) {
-	    std::cout << ": Failed to construct ExecutionEngine: " << errStr
-		      << "\n";
-	  }
+	 
 	  std::cout << "verifying... ";
 	  if (verifyModule(*module)) {
 	    std::cout << ": Error constructing function!\n";
@@ -294,11 +357,8 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	    ss << fname << "_call";
 	    Function* callerF = createCaller(ss.str(), bodyF, args, module);
 
-	    //	    module->dump();
+	    //module->dump();
 
-	    std::string errStr;
-	    ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
-	    	    
 	    typedef double (*ExecF)();
 	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
 

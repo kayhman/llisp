@@ -1,6 +1,8 @@
 #include "environment.h"
 #include "cell.h"
 
+void* sexp2 = NULL;
+
 template <typename Key, typename Val>
 Env<Key, Val>::Env()
 {

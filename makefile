@@ -30,7 +30,7 @@ bench.so: bench.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
 compiler.so: compiler.cpp
-	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl -lffi
+	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl -lffi -L. -lenvironment
 
 #compiler: compiler.cpp
 #	$(CPP) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -pthread -ldl
