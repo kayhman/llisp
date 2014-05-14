@@ -1,4 +1,4 @@
-#include "llvm/ADT/ArrayRef.h"
+$#include "llvm/ADT/ArrayRef.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Function.h"
@@ -153,9 +153,8 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       }
       
       CallInst *call = builder.CreateCall(F, ArgsV, "calltmp");
-      call->setTailCall();
+      //call->setTailCall();
       return call;
-      //return builder.CreateRet(call);
       }
 
   return 0;
