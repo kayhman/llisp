@@ -13,17 +13,24 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     if(args && body)
       {
 
-	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& dummy) mutable {
+	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& dummy) {
+		Cell::CellEnv env2 = env;
 	  //assert(cls.size() == args->cells.size());
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	  for(int c = 0 ; c < args->cells.size() ; c++)
-	    newEnv[args->cells[c]->val] = self->cells[c+1]->eval(env); // Eval args before adding them to env (avoid infinite loop when defining recursive function)
+	    newEnv[args->cells[c]->val] = self->cells[c+1]->eval(env2); // Eval args before adding them to env (avoid infinite loop when defining recursive function)
 	  
-	  env.addEnvMap(&newEnv);
-	  std::shared_ptr<Cell> res = body->eval(env);
-	  env.removeEnv();
+	  env2.addEnvMap(&newEnv);
+	  std::shared_ptr<Cell> res = body->eval(env2);
+	  env2.removeEnv();
 	  return res;
 	};
+			typedef std::shared_ptr<Cell> cloclo(Sexp* sexp, Cell::CellEnv&  dummy);
+			cloclo* clos2	= fname->closure.target<cloclo>();
+			std::cout << "defun -> check clos " << clos2 << " for " << fname->val << std::endl;
+
+
+
       }
 
     return fname;

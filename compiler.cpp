@@ -20,14 +20,25 @@ using namespace llvm;
 static std::map<std::string, Value*> NamedValues;
 ExecutionEngine *EE = NULL;
 
-extern "C" double boubou(void* sexp, void* env)
+extern "C" double boubou(void* sexp, void* env, void* clos)
 {
+	Cell::CellEnv* renv = dynamic_cast<Cell::CellEnv*>((Cell::CellEnv*)env); 
+	Sexp* rsexp = dynamic_cast<Sexp*>((Cell*)sexp); 
   std::cout << "call boubou" << std::endl;
-  std::cout << "sexp " << sexp  << std::endl;
+  std::cout << "sexp " << rsexp  << " " << sexp << std::endl;
+  std::cout << "env " << renv  << " " << env << std::endl;
+  std::cout << "clos" << clos << std::endl;
+
+	typedef  std::shared_ptr<Cell>(*cloclo)(Sexp*, Cell::CellEnv& );
+	cloclo closure = reinterpret_cast<cloclo>(clos) ;
+
+  closure(rsexp, *renv);	
   return 0.666;
 }
 
 extern "C" void* sexp2;// = NULL;
+extern "C" void* env2;// = NULL;
+extern "C" void* clos2;// = NULL;
 
 
 llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context, llvm::IRBuilder<>& builder, llvm::Module *module);
@@ -163,6 +174,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       std::vector<Type*> Ftype;
       Ftype.push_back(voidPtr);
       Ftype.push_back(voidPtr);
+      Ftype.push_back(voidPtr);
       //FunctionType *FT = FunctionType::get(Type::getDoubleTy(context), argsType, false);
       FunctionType *FT = FunctionType::get(Type::getDoubleTy(context),Ftype,false);
       //Function *F = Function::Create(FT,Function::ExternalLinkage,"boubou",module);
@@ -178,19 +190,40 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       //ConstantInt* const_int64_29 = ConstantInt::get(mod->getContext(), APInt(64, StringRef("12536"), 10));
 
       sexp2 = (void*)&sexp;
+      //env2 = (void*)&sexp;
+			typedef std::shared_ptr<Cell> cloclo(Sexp*, Cell::CellEnv& );
+			clos2	= (void*)fun->closure.target<cloclo>();
+			std::cout << "check clos " << clos2 << " " << std::endl;
       static GlobalVariable* Ptr0GV = new GlobalVariable(*module,
                                                   voidPtr,
                                                   false,
                                                   GlobalValue::ExternalLinkage,
                                                   0,
                                                   "sexp2");
+      static GlobalVariable* Ptr1GV = new GlobalVariable(*module,
+																		                voidPtr,
+																			              false,
+																				            GlobalValue::ExternalLinkage,
+																					          0,
+																						        "env2");
 
+      static GlobalVariable* Ptr2GV = new GlobalVariable(*module,
+																		                voidPtr,
+																			              false,
+																				            GlobalValue::ExternalLinkage,
+																					          0,
+																						        "clos2");
       LoadInst* ptr0 = builder.CreateLoad(Ptr0GV, "");
       ptr0->setAlignment(8);
-      std::cout << "ptr 0" << sexp2 << std::endl;
+      LoadInst* ptr1 = builder.CreateLoad(Ptr1GV, "");
+      ptr1->setAlignment(8);
+      LoadInst* ptr2 = builder.CreateLoad(Ptr2GV, "");
+      ptr2->setAlignment(8);
+
 
       ArgsV.push_back(ptr0);
-      ArgsV.push_back(nullPtr);
+      ArgsV.push_back(ptr1);
+      ArgsV.push_back(ptr2);
 
       //std::vector<GenericValue> ArgsGV(2);
       //ArgsGV.push_back(nullPtr);
@@ -352,6 +385,9 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
 	  //replace evaluated closure by compiled code
 	  fun->closure = [env, fname, bodyF, module](Sexp* self, Cell::CellEnv& dummy) mutable {
+      env2 = (void*)&env;
+
+
 	    std::vector<std::shared_ptr<Cell> > args(self->cells.begin()+1, self->cells.end());  
 	    std::stringstream ss;
 	    ss << fname << "_call";

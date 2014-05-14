@@ -23,7 +23,7 @@ struct Cell
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
 Cell() :quoting(NoneQ) {};
-  mutable std::function<std::shared_ptr<Cell>(Sexp* self, Cell::CellEnv& dummy)> closure;
+  mutable std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)> closure;
   mutable std::string val;
   mutable double real;
   Quoting quoting;
