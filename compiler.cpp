@@ -186,7 +186,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       std::vector<Value*> ArgsV;
       ConstantPointerNull* nullPtr = ConstantPointerNull::get(voidPtr);
       sexp2 = (void*)&sexp;
-      clos2	= reinterpret_cast<void*>(&fun->closure);
+      clos2 = reinterpret_cast<void*>(&fun->closure);
       std::cout << "check clos " << clos2 << " " << std::endl;
       static GlobalVariable* Ptr0GV = new GlobalVariable(*module,
                                                          voidPtr,
@@ -369,7 +369,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
 	  //replace evaluated closure by compiled code
 	  fun->closure = [env, fname, bodyF, module](Sexp* self, Cell::CellEnv& dummy) mutable {
-      env2 = (void*)&env;
+            //env2 = (void*)&env;
 
 
 	    std::vector<std::shared_ptr<Cell> > args(self->cells.begin()+1, self->cells.end());  

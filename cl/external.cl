@@ -8,7 +8,7 @@
 	(test 1 1))
 
 (defun gg (c d)
-	(test 1 7))
+	(test c d))
 
 (defun bou (a b)
 	(gg 1 15))

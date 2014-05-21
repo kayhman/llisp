@@ -1,6 +1,8 @@
 #include "cell.h"
 #include <dlfcn.h>
 
+extern "C" void* env2;// = NULL;
+
 bool isoperator(char c) {
      std::string const valid_chars = "+*-/!=<>\"";
      return valid_chars.find(c) != std::string::npos;
@@ -206,6 +208,7 @@ int loadHandlers(const std::string& lib, const std::string& handlerName, Cell::C
 
 std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 {
+  env2 = &env;
   std::shared_ptr<Cell> cl = this->cells[0];
   if(cl->closure)
     return cl->closure(this, env);
