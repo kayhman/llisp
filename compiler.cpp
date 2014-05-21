@@ -26,10 +26,9 @@ extern "C" double call_interpreted(void* sexp, void* env, void* clos)
   Sexp* rsexp = dynamic_cast<Sexp*>((Cell*)sexp); 
   std::cout << "call_interpreted" << std::endl;
   std::cout << "sexp " << rsexp  << " " << sexp << std::endl;
-  std::cout << "env " << renv  << " " << env << std::endl;
+  std::cout << "env " << renv  << " " << env << " " << (*renv)["c"] << std::endl;
   std::cout << "clos " << clos << std::endl;
   
-  typedef  std::shared_ptr<Cell>(*cloclo)(Sexp*, Cell::CellEnv& );
   std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>& closure = *reinterpret_cast<std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>*>(clos);
 
   std::cout << "clos ret val " << *closure(rsexp, *renv) << std::endl;
