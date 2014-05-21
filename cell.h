@@ -20,12 +20,14 @@ struct Sexp;
 struct Cell
 {
   enum Quoting {Quote, BackQuote, NoneQ};
+  bool compiled;
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
-Cell() :quoting(NoneQ) {};
+Cell() :quoting(NoneQ), compiled(false) {};
   mutable std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)> closure;
   mutable std::string val;
   mutable double real;
+
   Quoting quoting;
   std::weak_ptr<Cell> evaluated;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;

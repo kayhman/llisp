@@ -8,7 +8,7 @@
 	(test 1 1))
 
 (defun gg (c d)
-	(test c d))
+	(test 1 7))
 
 (compile "ff")
 (compile "gg")

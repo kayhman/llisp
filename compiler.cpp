@@ -20,11 +20,11 @@ using namespace llvm;
 static std::map<std::string, Value*> NamedValues;
 ExecutionEngine *EE = NULL;
 
-extern "C" double boubou(void* sexp, void* env, void* clos)
+extern "C" double call_interpreted(void* sexp, void* env, void* clos)
 {
   Cell::CellEnv* renv = dynamic_cast<Cell::CellEnv*>((Cell::CellEnv*)env); 
   Sexp* rsexp = dynamic_cast<Sexp*>((Cell*)sexp); 
-  std::cout << "call boubou" << std::endl;
+  std::cout << "call_interpreted" << std::endl;
   std::cout << "sexp " << rsexp  << " " << sexp << std::endl;
   std::cout << "env " << renv  << " " << env << std::endl;
   std::cout << "clos " << clos << std::endl;
@@ -32,7 +32,9 @@ extern "C" double boubou(void* sexp, void* env, void* clos)
   typedef  std::shared_ptr<Cell>(*cloclo)(Sexp*, Cell::CellEnv& );
   std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>& closure = *reinterpret_cast<std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>*>(clos);
 
-  std::cout << "clos ret val " << *closure(rsexp, *renv) << std::endl;;	
+  std::cout << "clos ret val " << *closure(rsexp, *renv) << std::endl;
+  std::shared_ptr<Cell> res = closure(rsexp, *renv);
+  std::cout << "clos ret val " << *res << std::endl;
   return 0.666;
 }
 
@@ -165,33 +167,25 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       return PN;
     }
 
-  if(fun->val.compare("test") == 0)
+  
+  SymbolAtom* symbol = dynamic_cast<SymbolAtom*>(fun.get());
+  if(symbol != NULL && !fun->compiled)
     {
-      
-      
       PointerType* voidPtr = PointerType::get(IntegerType::get(context, 8), 0);
-
+      
       std::vector<Type*> Ftype;
       Ftype.push_back(voidPtr);
       Ftype.push_back(voidPtr);
       Ftype.push_back(voidPtr);
-      //FunctionType *FT = FunctionType::get(Type::getDoubleTy(context), argsType, false);
       FunctionType *FT = FunctionType::get(Type::getDoubleTy(context),Ftype,false);
-      //Function *F = Function::Create(FT,Function::ExternalLinkage,"boubou",module);
-      Function* F = cast<Function>(module->getOrInsertFunction("boubou",  FT));
+      Function* F = cast<Function>(module->getOrInsertFunction("call_interpreted",  FT));
 
       F->setCallingConv(CallingConv::C);
-      EE->addGlobalMapping(F, (void*)&boubou);
+      EE->addGlobalMapping(F, (void*)&call_interpreted);
       
       std::vector<Value*> ArgsV;
       ConstantPointerNull* nullPtr = ConstantPointerNull::get(voidPtr);
-      //Constant* Ptr0Add = ConstantInt::get(Type::getInt32Ty(context), (int)&sexp);
-      //Constant* Ptr0 = ConstantExpr::getGetElementPtr(, Ptr0Add);
-      //ConstantInt* const_int64_29 = ConstantInt::get(mod->getContext(), APInt(64, StringRef("12536"), 10));
-
       sexp2 = (void*)&sexp;
-      //env2 = (void*)&sexp;
-      typedef std::shared_ptr<Cell> cloclo(Sexp*, Cell::CellEnv& );
       clos2	= reinterpret_cast<void*>(&fun->closure);
       std::cout << "check clos " << clos2 << " " << std::endl;
       static GlobalVariable* Ptr0GV = new GlobalVariable(*module,
@@ -225,22 +219,12 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       ArgsV.push_back(ptr1);
       ArgsV.push_back(ptr2);
 
-      //std::vector<GenericValue> ArgsGV(2);
-      //ArgsGV.push_back(nullPtr);
-      //ArgsGV.push_back(nullPtr);
-       //GenericValue gv = EE->runFunction(F, ArgsGV);
-      
-      // Import result of execution:
-      //std::cout << "Result: " << gv.DoubleVal << "\n";
-
-
       CallInst *call = builder.CreateCall(F, ArgsV, "calltmp");
 
-      //module->dump();
       return call;
     }
 
-  if(SymbolAtom* symbol = dynamic_cast<SymbolAtom*>(fun.get()))
+  if(symbol)
     {
       Function* F = module->getFunction(symbol->val);
 
@@ -403,6 +387,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
 	    return res;
 	  };
+          fun->compiled = true;
 
 	  return fun->code;
 	}
