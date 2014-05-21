@@ -25,12 +25,6 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	  env2.removeEnv();
 	  return res;
 	};
-			typedef std::shared_ptr<Cell> cloclo(Sexp* sexp, Cell::CellEnv&  dummy);
-			cloclo* clos2	= fname->closure.target<cloclo>();
-			std::cout << "defun -> check clos " << clos2 << " for " << fname->val << std::endl;
-
-
-
       }
 
     return fname;
