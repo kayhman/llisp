@@ -22,17 +22,17 @@ ExecutionEngine *EE = NULL;
 
 extern "C" double boubou(void* sexp, void* env, void* clos)
 {
-	Cell::CellEnv* renv = dynamic_cast<Cell::CellEnv*>((Cell::CellEnv*)env); 
-	Sexp* rsexp = dynamic_cast<Sexp*>((Cell*)sexp); 
+  Cell::CellEnv* renv = dynamic_cast<Cell::CellEnv*>((Cell::CellEnv*)env); 
+  Sexp* rsexp = dynamic_cast<Sexp*>((Cell*)sexp); 
   std::cout << "call boubou" << std::endl;
   std::cout << "sexp " << rsexp  << " " << sexp << std::endl;
   std::cout << "env " << renv  << " " << env << std::endl;
-  std::cout << "clos" << clos << std::endl;
+  std::cout << "clos " << clos << std::endl;
+  
+  typedef  std::shared_ptr<Cell>(*cloclo)(Sexp*, Cell::CellEnv& );
+  std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>& closure = *reinterpret_cast<std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>*>(clos);
 
-	typedef  std::shared_ptr<Cell>(*cloclo)(Sexp*, Cell::CellEnv& );
-	cloclo closure = reinterpret_cast<cloclo>(clos) ;
-
-  closure(rsexp, *renv);	
+  std::cout << "clos ret val " << *closure(rsexp, *renv) << std::endl;;	
   return 0.666;
 }
 
@@ -191,28 +191,28 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
 
       sexp2 = (void*)&sexp;
       //env2 = (void*)&sexp;
-			typedef std::shared_ptr<Cell> cloclo(Sexp*, Cell::CellEnv& );
-			clos2	= (void*)fun->closure.target<cloclo>();
-			std::cout << "check clos " << clos2 << " " << std::endl;
+      typedef std::shared_ptr<Cell> cloclo(Sexp*, Cell::CellEnv& );
+      clos2	= reinterpret_cast<void*>(&fun->closure);
+      std::cout << "check clos " << clos2 << " " << std::endl;
       static GlobalVariable* Ptr0GV = new GlobalVariable(*module,
-                                                  voidPtr,
-                                                  false,
-                                                  GlobalValue::ExternalLinkage,
-                                                  0,
-                                                  "sexp2");
+                                                         voidPtr,
+                                                         false,
+                                                         GlobalValue::ExternalLinkage,
+                                                         0,
+                                                         "sexp2");
       static GlobalVariable* Ptr1GV = new GlobalVariable(*module,
-																		                voidPtr,
-																			              false,
-																				            GlobalValue::ExternalLinkage,
-																					          0,
-																						        "env2");
-
+                                                         voidPtr,
+                                                         false,
+                                                         GlobalValue::ExternalLinkage,
+                                                         0,
+                                                         "env2");
+      
       static GlobalVariable* Ptr2GV = new GlobalVariable(*module,
-																		                voidPtr,
-																			              false,
-																				            GlobalValue::ExternalLinkage,
-																					          0,
-																						        "clos2");
+                                                         voidPtr,
+                                                         false,
+                                                         GlobalValue::ExternalLinkage,
+                                                         0,
+                                                         "clos2");
       LoadInst* ptr0 = builder.CreateLoad(Ptr0GV, "");
       ptr0->setAlignment(8);
       LoadInst* ptr1 = builder.CreateLoad(Ptr1GV, "");
