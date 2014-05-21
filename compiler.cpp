@@ -377,7 +377,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	    ss << fname << "_call";
 
 	    Function* callerF = createCaller(ss.str(), bodyF, args, module);
-      std::cout << "try call " << ss.str() << " " << callerF << " with " <<  EE << std::endl;
+      std::cout << "try call " << ss.str() << " " << callerF << " with " <<  EE << " and " << module << std::endl;
 	    //module->dump();
 
 	    typedef double (*ExecF)();

@@ -11,12 +11,16 @@
 	(test 1 7))
 
 (defun bou (a b)
-	(gg a b))
+	(gg 1 15))
 
 (bou 3 4)
 
 (compile "ff")
 (compile "gg")
 (gg 1 7)
+
+(gg 1 7)
+
+(+ (gg 1 7) 12 )
 
 (bou 3 4)
