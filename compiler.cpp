@@ -224,7 +224,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       return call;
     }
 
-  if(symbol)
+  if(symbol && fun->compiled)
     {
       Function* F = module->getFunction(symbol->val);
 
@@ -375,13 +375,15 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	    std::vector<std::shared_ptr<Cell> > args(self->cells.begin()+1, self->cells.end());  
 	    std::stringstream ss;
 	    ss << fname << "_call";
-	    Function* callerF = createCaller(ss.str(), bodyF, args, module);
 
+	    Function* callerF = createCaller(ss.str(), bodyF, args, module);
+      std::cout << "try call " << ss.str() << " " << callerF << " with " <<  EE << std::endl;
 	    //module->dump();
 
 	    typedef double (*ExecF)();
-	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
 
+	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
+      std::cout << "try get " << ss.str() << " " << execF << std::endl;
 	    std::shared_ptr<Cell> res(RealAtom::New());
 	    res->real = execF();
 
