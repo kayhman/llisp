@@ -65,8 +65,23 @@ typename std::map<Key,Val>::iterator Env<Key, Val>::end() const
     return this->top.end();
 }
 
+
+template <typename Key, typename Val>
+std::ostream& operator<< (std::ostream& stream, const Env<Key, Val>& env)
+  {
+    for(auto eIt = env.envs.begin() ; eIt != env.envs.end() ; eIt++)
+      {
+	for(auto it = (*eIt)->begin() ; it != (*eIt)->end() ; it++)
+	  {
+	    std::cout << it->first << " : " << *(it->second) << std::endl;
+	  }
+      }
+    return stream;
+  }
+
 template<typename K, typename V> std::map<K, V> Env<K,V>::top;
 template<typename K, typename V> std::map<K, V> Env<K,V>::func;
 template<typename K, typename V> std::map<K, std::function<V(Sexp* sexp, Env<K,V>& env)> > Env<K,V>::evalHandlers;
 
+template std::ostream& operator<< (std::ostream& stream, const Env<std::string, std::shared_ptr<Cell> >& env);
 template class  Env<std::string,std::shared_ptr<Cell> >;

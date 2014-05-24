@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include <functional>
-
 class Sexp;
 class Cell;
 
@@ -25,4 +24,8 @@ public:
   Env();
   void addEnvMap(std::map<Key, Val>* env);
   void removeEnv();
+
+  template<typename K, typename V>
+    friend std::ostream& operator<< (std::ostream& stream, const Env<K, V>& env);
+
 };
