@@ -25,6 +25,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	  env2.removeEnv();
 	  return res;
 	};
+
       }
 
     return fname;
