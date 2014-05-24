@@ -76,6 +76,12 @@ std::ostream& operator<< (std::ostream& stream, const Env<Key, Val>& env)
 	    std::cout << it->first << " : " << *(it->second) << std::endl;
 	  }
       }
+
+    for(auto it = env.func.begin() ; it != env.func.end() ; it++)
+      {
+	std::cout << "func : " << it->first << " : " << *(it->second) << " compiled? " << it->second->compiled << std::endl;
+      }
+
     return stream;
   }
 
