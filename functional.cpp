@@ -15,9 +15,12 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 
 	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& callingEnv) {
 	  Cell::CellEnv currentEnv = env;
-		for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
-			currentEnv.addEnvMap(*eIt);
-		
+	  std::cout << "call " << *self->cells[0] << " with args " << *args << std::endl;
+	  std::cout << "env" << callingEnv << std::endl;
+	  for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
+	    currentEnv.addEnvMap(*eIt);
+	  std::cout << "merge done" << std::endl;
+	  
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	  for(int c = 0 ; c < args->cells.size() ; c++)
 	    {
@@ -27,16 +30,18 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 		newEnv[args->cells[c]->val] = currentEnv[symb->val];
 	      else
 		newEnv[args->cells[c]->val] = val; // Eval args before adding them to env (avoid infinite loop when defining recursive function)
+	      std::cout << "new env :-> " << args->cells[c]->val << " : " <<  *newEnv[args->cells[c]->val] << std::endl;
 	    }
 	  currentEnv.addEnvMap(&newEnv);
+	  
 
 	  std::shared_ptr<Cell> res = body->eval(currentEnv);
 	  
-    //The following lines are useless :
-		currentEnv.removeEnv();
-		for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
-			currentEnv.removeEnv();
-		  return res;
+	  //The following lines are useless :
+	  currentEnv.removeEnv();
+	  for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
+	    currentEnv.removeEnv();
+	  return res;
 	};
 
       }
