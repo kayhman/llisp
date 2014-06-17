@@ -208,11 +208,17 @@ int loadHandlers(const std::string& lib, const std::string& handlerName, Cell::C
 
 std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 {
+  CellEnv* save = reinterpret_cast<CellEnv*>(env2);
+  //  std::shared_ptr<CellEnv> keep = env;
+  std::cout << "set env " << &env << " was " << env2 << std::endl;
   env2 = &env;
   std::shared_ptr<Cell> cl = this->cells[0];
   if(cl->closure)
-    return cl->closure(this, env);
-
+    {
+      std::cout << "call closure" << cl->val <<std::endl;
+      return cl->closure(this, env);
+    }
+  std::cout << "call closure" << std::endl;
   if(cl->val.compare("load") == 0)   
     {
       loadHandlers(this->cells[1]->eval(env)->val,
@@ -239,7 +245,8 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
   if(evalIt != env.evalHandlers.end())
     return (evalIt->second)(this, env);
   
-
+  env2 = save;
+  std::cout << "restore env2 and destroy keep" << std::endl;
   return std::shared_ptr<Cell>(StringAtom::New());    
 }
 

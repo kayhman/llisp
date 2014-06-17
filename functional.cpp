@@ -13,12 +13,19 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     if(args && body)
       {
 
-	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& callingEnv) {
-	  Cell::CellEnv currentEnv = env;
+	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& callingEnv) mutable { //remove mutable by using env instead of currentEnv
+	  Cell::CellEnv& currentEnv = env;
 	  std::cout << "call " << *self->cells[0] << " with args " << *args << std::endl;
-	  std::cout << "env" << callingEnv << std::endl;
-	  for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
-	    currentEnv.addEnvMap(*eIt);
+	  std::cout << "env : " << &callingEnv << std::endl;
+	  std::cout << callingEnv << std::endl;
+	  std::cout << "size : " << callingEnv.envs.size() << std::endl;
+	  //	  std::cout << "end : " << callingEnv.envs.end() << std::endl;
+	  if(&currentEnv != &callingEnv)
+	    for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; ++eIt)
+	      {
+		std::cout << "try add env" << *eIt << std::endl;
+		currentEnv.addEnvMap(*eIt);
+	      }
 	  std::cout << "merge done" << std::endl;
 	  
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;

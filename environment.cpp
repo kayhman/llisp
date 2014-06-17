@@ -12,6 +12,12 @@ Env<Key, Val>::Env()
 }
 
 template <typename Key, typename Val>
+Env<Key, Val>::~Env()
+{
+  std::cout << "destroy env " << this << std::endl;  
+}
+
+template <typename Key, typename Val>
 void Env<Key, Val>::addEnvMap(std::map<Key, Val>* env)
 {
   this->envs.push_back(env);

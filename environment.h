@@ -22,6 +22,7 @@ public:
   typename std::map<Key,Val>::iterator find(const Key& k);
   typename std::map<Key,Val>::iterator end() const;
   Env();
+  ~Env();
   void addEnvMap(std::map<Key, Val>* env);
   void removeEnv();
 
