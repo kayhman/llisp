@@ -10,4 +10,3 @@
 
 (compile "fibo")
 
-(time (fibo 3))

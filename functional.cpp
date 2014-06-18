@@ -40,8 +40,11 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	      std::cout << "new env :-> " << args->cells[c]->val << " : " <<  *newEnv[args->cells[c]->val] << std::endl;
 	    }
 	  currentEnv.addEnvMap(&newEnv);
-	  
+          std::cout << "augemented env : " << currentEnv.envs.size() << " > " << currentEnv << std::endl;
+          std::cout << "augemented env : " << &currentEnv << std::endl;
 
+          std::cout << "body " << *body << std::endl;
+          
 	  std::shared_ptr<Cell> res = body->eval(currentEnv);
 	  
 	  //The following lines are useless :

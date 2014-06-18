@@ -215,7 +215,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
   std::shared_ptr<Cell> cl = this->cells[0];
   if(cl->closure)
     {
-      std::cout << "call closure" << cl->val <<std::endl;
+      std::cout << "call closure " << cl->val <<std::endl;
       return cl->closure(this, env);
     }
   std::cout << "call closure" << std::endl;

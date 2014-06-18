@@ -27,7 +27,9 @@ extern "C" double call_interpreted(void* sexp, void* env, void* clos)
   
   std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>& closure = *reinterpret_cast<std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>*>(clos);
 
+  std::cout << "<---- calling interpreted" << std::endl;
   std::shared_ptr<Cell> res = closure(rsexp, *renv);
+  std::cout << "done calling interpreted --->" << std::endl;
   return res->real;
 }
 
@@ -225,8 +227,9 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       for (unsigned i = 1; i < sexp.cells.size(); ++i) {
 	ArgsV.push_back(codegen(*sexp.cells[i], context, builder, module));
       }
-      
-      CallInst *call = builder.CreateCall(F, ArgsV, "calltmp");
+      std::stringstream ss;
+      ss << "call_"  << fun->val;
+      CallInst *call = builder.CreateCall(F, ArgsV, ss.str());
       //call->setTailCall();
       return call;
       }
@@ -347,7 +350,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  if (verifyModule(*module)) {
 	    std::cout << ": Error constructing function!\n";
 
-	  }
+	  }         
 	  
 	  Function* f = EE->FindFunctionNamed(fname.c_str());
 
@@ -387,10 +390,14 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
 	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
 	    std::shared_ptr<Cell> res(RealAtom::New());
+            std::cout << "compiled code" << std::endl;
+            module->dump();
+
+
 	    res->real = execF();
 
 	    dummy.removeEnv();
-
+          
 	    return res;
 	  };
 	  return fun->code;

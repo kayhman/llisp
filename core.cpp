@@ -50,10 +50,15 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   inf->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
-   
+ 
+    std::cout << "try eval " << std::endl;
+    std::cout << "eval a1 " << *m1 << std::endl;
+    std::cout << "eval a2 " << *m2 << std::endl;
+
     double a1 = m1->eval(env)->real;
     double a2 = m2->eval(env)->real;
-    
+  
+    std::cout << "eval done " << a1 << " " << a2 <<std::endl;  
     std::shared_ptr<Cell> res = sexp->evaluated.lock();//RealAtom::New();
     if (a1 < a2)
       res->real = 1.0;
