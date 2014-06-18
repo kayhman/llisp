@@ -1,0 +1,25 @@
+* Objectifs / motivations
+** Mettre au point un langage de programmation évolué : support des macros / lol 
+** Le faire de manière compacte, modulaire, et extensible
+** Découvrir le C++x11
+** Utiliser clang++
+** Utiliser langage en vogue : lisp (scala, ...)
+* Présentation lisp
+** let over lambda
+** macro : Equivalence of code and data
+* Mise en place du chantier -> compilo clang++
+** Besoin : regex (clang + libc++) ; dynamic_cast (stdcxx)
+* Structure de données du langage
+** Sexp, Atom
+** shared_ptr (check valgrind)
+* Parsing :-> operator>>
+** regexp ?
+* Affichage
+* Evalutation
+** map
+** closure
+* Arithmetic
+* List
+** list
+** append
+* Conclusion
