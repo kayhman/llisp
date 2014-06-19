@@ -9,4 +9,4 @@
 
 
 (compile "fibo")
-(fibo 2)
+(time (fibo 15))

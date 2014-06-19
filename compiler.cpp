@@ -23,8 +23,6 @@ ExecutionEngine *EE = NULL;
 
 extern "C" double call_interpreted(void* clos, const char* fmt...)
 {
-  std::cout << "calling variadic" << std::endl;
-
   std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>& closure = *reinterpret_cast<std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>*>(clos);
   std::shared_ptr<Sexp> sx = Sexp::New();
   sx->cells.push_back(SymbolAtom::New()); // add dummy function
@@ -34,34 +32,20 @@ extern "C" double call_interpreted(void* clos, const char* fmt...)
   va_start(args, fmt);
 
   while (*fmt != '\0') {
-    std::cout << "char " << *fmt << std::endl; 
-    if (*fmt == 'd') {
-      std::cout << "try read double " << std::endl;
+    if (*fmt == 'f') {
       double d = va_arg(args, double);
-      std::cout << "read double " << d << std::endl;
       sx->cells.push_back(RealAtom::New());
       sx->cells.back()->real = d;
-      std::cout << "read double " << d << std::endl;
     } else if (*fmt == 's') {
     }
     ++fmt;
   }
  
   va_end(args);
-  std::cout << "<---- calling interpreted" << std::endl;
+
   std::shared_ptr<Cell> res = closure(sx.get(), emptyEnv);
-  std::cout << "done calling interpreted ---> " << res->real << std::endl;
+
   return res->real;
-    /*
-  Cell::CellEnv* renv = dynamic_cast<Cell::CellEnv*>((Cell::CellEnv*)env); 
-  Sexp* rsexp = dynamic_cast<Sexp*>((Cell*)sexp); 
-  
-
-
-  std::cout << "<---- calling interpreted" << std::endl;
-  std::shared_ptr<Cell> res = closure(rsexp, *renv);
-  std::cout << "done calling interpreted --->" << std::endl;
-  return res->real;*/
 }
 
 extern "C" void* sexp2;// = NULL;
@@ -224,7 +208,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       //Add fmt arg
       std::stringstream ss;
       for (unsigned i = 1; i < sexp.cells.size(); ++i) {
-	ss << "d"; //todo : set format according to sexp type
+	ss << "f"; //todo : set format according to sexp type
       }
       Constant* fmt = ConstantDataArray::getString(module->getContext(), ss.str(), true);
       Value* stringVar = builder.CreateAlloca(fmt->getType());
