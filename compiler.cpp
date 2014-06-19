@@ -9,6 +9,7 @@
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
+#include <cstdarg>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -20,17 +21,47 @@ using namespace llvm;
 static std::map<std::string, Value*> NamedValues;
 ExecutionEngine *EE = NULL;
 
-extern "C" double call_interpreted(void* sexp, void* env, void* clos)
+extern "C" double call_interpreted(void* clos, const char* fmt...)
 {
+  std::cout << "calling variadic" << std::endl;
+
+  std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>& closure = *reinterpret_cast<std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>*>(clos);
+  std::shared_ptr<Sexp> sx = Sexp::New();
+  sx->cells.push_back(SymbolAtom::New()); // add dummy function
+  Cell::CellEnv emptyEnv;
+
+  va_list args;
+  va_start(args, fmt);
+
+  while (*fmt != '\0') {
+    std::cout << "char " << *fmt << std::endl; 
+    if (*fmt == 'd') {
+      std::cout << "try read double " << std::endl;
+      double d = va_arg(args, double);
+      std::cout << "read double " << d << std::endl;
+      sx->cells.push_back(RealAtom::New());
+      sx->cells.back()->real = d;
+      std::cout << "read double " << d << std::endl;
+    } else if (*fmt == 's') {
+    }
+    ++fmt;
+  }
+ 
+  va_end(args);
+  std::cout << "<---- calling interpreted" << std::endl;
+  std::shared_ptr<Cell> res = closure(sx.get(), emptyEnv);
+  std::cout << "done calling interpreted ---> " << res->real << std::endl;
+  return res->real;
+    /*
   Cell::CellEnv* renv = dynamic_cast<Cell::CellEnv*>((Cell::CellEnv*)env); 
   Sexp* rsexp = dynamic_cast<Sexp*>((Cell*)sexp); 
   
-  std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>& closure = *reinterpret_cast<std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)>*>(clos);
+
 
   std::cout << "<---- calling interpreted" << std::endl;
   std::shared_ptr<Cell> res = closure(rsexp, *renv);
   std::cout << "done calling interpreted --->" << std::endl;
-  return res->real;
+  return res->real;*/
 }
 
 extern "C" void* sexp2;// = NULL;
@@ -171,51 +202,44 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       
       std::vector<Type*> Ftype;
       Ftype.push_back(voidPtr);
-      Ftype.push_back(voidPtr);
-      Ftype.push_back(voidPtr);
-      FunctionType *FT = FunctionType::get(Type::getDoubleTy(context),Ftype,false);
+      FunctionType *FT = FunctionType::get(Type::getDoubleTy(context),Ftype,true);
       Function* F = cast<Function>(module->getOrInsertFunction("call_interpreted",  FT));
 
       F->setCallingConv(CallingConv::C);
       EE->addGlobalMapping(F, (void*)&call_interpreted);
-      
-      std::vector<Value*> ArgsV;
-      ConstantPointerNull* nullPtr = ConstantPointerNull::get(voidPtr);
-      sexp2 = (void*)&sexp;
+
+      std::vector<Value*> ArgsV;      
+      //create pointer to closure
       clos2 = reinterpret_cast<void*>(&fun->closure);
-      static GlobalVariable* Ptr0GV = new GlobalVariable(*module,
-                                                         voidPtr,
-                                                         false,
-                                                         GlobalValue::ExternalLinkage,
-                                                         0,
-                                                         "sexp2");
-      static GlobalVariable* Ptr1GV = new GlobalVariable(*module,
-                                                         voidPtr,
-                                                         false,
-                                                         GlobalValue::ExternalLinkage,
-                                                         0,
-                                                         "env2");
-      
       static GlobalVariable* Ptr2GV = new GlobalVariable(*module,
                                                          voidPtr,
                                                          false,
                                                          GlobalValue::ExternalLinkage,
                                                          0,
                                                          "clos2");
-      LoadInst* ptr0 = builder.CreateLoad(Ptr0GV, "");
-      ptr0->setAlignment(8);
-      LoadInst* ptr1 = builder.CreateLoad(Ptr1GV, "");
-      ptr1->setAlignment(8);
       LoadInst* ptr2 = builder.CreateLoad(Ptr2GV, "");
       ptr2->setAlignment(8);
-
-
-      ArgsV.push_back(ptr0);
-      ArgsV.push_back(ptr1);
       ArgsV.push_back(ptr2);
 
-      CallInst *call = builder.CreateCall(F, ArgsV, "calltmp");
+      //Add fmt arg
+      std::stringstream ss;
+      for (unsigned i = 1; i < sexp.cells.size(); ++i) {
+	ss << "d"; //todo : set format according to sexp type
+      }
+      Constant* fmt = ConstantDataArray::getString(module->getContext(), ss.str(), true);
+      Value* stringVar = builder.CreateAlloca(fmt->getType());
+      builder.CreateStore(fmt, stringVar);
 
+      ArgsV.push_back(stringVar);
+      
+      //add var args
+      for (unsigned i = 1; i < sexp.cells.size(); ++i) {
+	ArgsV.push_back(codegen(*sexp.cells[i], context, builder, module));
+      }
+      ss.str("");
+      ss << "call_"  << fun->val;
+      CallInst *call = builder.CreateCall(F, ArgsV, ss.str());
+      //call->setTailCall();
       return call;
     }
 
