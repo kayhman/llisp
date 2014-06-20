@@ -1,9 +1,6 @@
 #include "environment.h"
 #include "cell.h"
 
-void* sexp2 = NULL;
-
-
 std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 {
      bool newToken = false;

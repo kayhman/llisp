@@ -48,8 +48,6 @@ extern "C" double call_interpreted(void* clos, const char* fmt...)
   return res->real;
 }
 
-extern "C" void* sexp2;// = NULL;
-extern "C" void* env2;// = NULL;
 extern "C" void* clos2;// = NULL;
 
 

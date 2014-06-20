@@ -1,8 +1,6 @@
 #include "environment.h"
 #include "cell.h"
 
-void* sexp2 = NULL;
-void* env2 = NULL;
 void* clos2 = NULL;
 
 template <typename Key, typename Val>
