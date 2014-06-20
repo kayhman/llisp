@@ -149,10 +149,19 @@ std::shared_ptr<StringAtom> StringAtom::New()
   return atom;
 }
 
+Cell::Type SymbolAtom::computeType() const 
+{
+  if(this->retType != Cell::Type::Unknown)
+    return this->retType;
+  else
+    return Type::Symbol;
+};
+
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
   std::shared_ptr<SymbolAtom> atom(new SymbolAtom);// = pool.back();
   //  pool.pop_back();
+  atom->retType = Cell::Type::Unknown;
   atom->evaluated = atom;
   //  gc.push_back(atom);
   return atom;

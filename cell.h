@@ -102,7 +102,8 @@ struct SymbolAtom : public Atom
   std::shared_ptr<Cell> code;
   std::shared_ptr<Sexp> args;
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
-  virtual Type computeType() const {return Type::Symbol;};
+  Type retType;
+  virtual Type computeType() const;
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);
   static std::shared_ptr<SymbolAtom> New(); 
