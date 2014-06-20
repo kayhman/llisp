@@ -66,6 +66,11 @@ std::ostream& operator<< (std::ostream& stream, const SymbolAtom& atom)
   return stream;
 }
 
+bool Cell::checkSyntax() const
+{
+  return this->computeType() != Cell::Type::Unknown;
+}
+
 Atom::Type Atom::computeType(const std::string& code)
 {
   if(code.front() == '"' &&  code.back() == '"')
@@ -200,6 +205,27 @@ int loadHandlers(const std::string& lib, const std::string& handlerName, Cell::C
     // close the library
     //dlclose(handle);
     return 0;
+}
+
+bool incompatibleType(Cell::Type ta, Cell::Type tb)
+{
+  return (ta == Cell::Type::Real && tb == Cell::Type::String) ||
+    (tb == Cell::Type::Real && ta == Cell::Type::String);
+}
+
+Cell::Type Sexp::computeType() const
+{
+  if(this->cells.size()  == 1) 
+    return this->cells[0]->computeType();
+  
+  if(this->cells.size() == 2)
+    return this->cells[1]->computeType();
+  
+  Cell::Type sType = this->cells[1]->computeType();
+  for(auto cIt = this->cells.begin()+2 ; cIt != this->cells.end() ; cIt++)
+    if(incompatibleType((*cIt)->computeType(), sType))
+        return Cell::Type::Unknown;
+  return sType;
 }
 
 std::shared_ptr<Cell> Sexp::eval(CellEnv& env)

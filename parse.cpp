@@ -1,5 +1,6 @@
 #include "environment.h"
 #include "cell.h"
+#include <istream>
 
 std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 {
@@ -133,34 +134,30 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
        return std::shared_ptr<Cell>(NULL);
 }
 
-bool evalHelper(const std::string& code, Cell::CellEnv& env)
+bool evalHelper(std::istream& ss, Cell::CellEnv& env)
 {
-  std::stringstream ss;
-  ss << code << "\n";
   std::shared_ptr<Cell> sexp = parse(ss, env);
   if(sexp)
     {
-      std::cout << "> " << *sexp << std::endl;
-      std::cout << "-> " << *sexp->eval(env) << std::endl;
+      if(sexp->checkSyntax())
+        {
+          std::cout << "> " << *sexp << std::endl;
+          std::cout << "-> " << *sexp->eval(env) << std::endl;
+        }
+      else
+        std::cout << "Syntax Error" << std::endl;
       return true;
     }
-  return false;
+  else
+    return false;
 }
 
 void loadFile(const std::string& file, Cell::CellEnv& env)
 {
   std::ifstream in(file);
   while(!in.eof())
-    {                              
-      std::shared_ptr<Cell> sexp = parse(in, env);
-      if(sexp)
-	{
-          std::cout << "> " << *sexp << std::endl;
-	  std::cout << "-> " << *sexp->eval(env) << std::endl;
-	}
-      else
-	break;
-    }
+    if(!evalHelper(in, env))
+      break;
 }
 int main(int argc, char* argv[])
 { 
@@ -173,11 +170,16 @@ int main(int argc, char* argv[])
   StringAtom::initGC();
   SymbolAtom::initGC();
 
-  evalHelper("(load \"./core.so\" \"registerCoreHandlers\")", env);
-  evalHelper("(load \"./functional.so\" \"registerFunctionalHandlers\")", env);
-  evalHelper("(load \"./string.so\" \"registerStringHandlers\")", env);
-  evalHelper("(load \"./bench.so\" \"registerBenchHandlers\")", env);
-  evalHelper("(load \"./compiler.so\" \"registerCompilerHandlers\")", env);
+  std::stringstream core("(load \"./core.so\" \"registerCoreHandlers\")");
+  evalHelper(core, env);
+  std::stringstream func("(load \"./functional.so\" \"registerFunctionalHandlers\")");
+  evalHelper(func, env);
+  std::stringstream str("(load \"./string.so\" \"registerStringHandlers\")");
+  evalHelper(str, env);
+  std::stringstream bench("(load \"./bench.so\" \"registerBenchHandlers\")");
+  evalHelper(bench, env);
+  std::stringstream comp("(load \"./compiler.so\" \"registerCompilerHandlers\")");
+  evalHelper(comp, env);
 
   if(argc == 2)
     loadFile(argv[1], env);
@@ -200,7 +202,8 @@ int main(int argc, char* argv[])
         }
  
       curLine += " " +  in;
-      if(evalHelper(curLine, env))
+      std::stringstream cl(curLine);
+      if(evalHelper(cl, env))
         curLine = "";
     }
   
