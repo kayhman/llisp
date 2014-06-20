@@ -49,7 +49,7 @@
 (time (fibo 25))
 (compile "fibo")
 
-(time (fibo 25))
+(time (fibo 20))
 (time (fibo 40))
 
 (defun ff (a b)

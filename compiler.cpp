@@ -398,9 +398,6 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
 	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
 	    std::shared_ptr<Cell> res(RealAtom::New());
-            std::cout << "compiled code" << std::endl;
-            module->dump();
-
 
 	    res->real = execF();
 

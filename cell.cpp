@@ -70,7 +70,6 @@ std::ostream& operator<< (std::ostream& stream, const SymbolAtom& atom)
 
 Atom::Type Atom::computeType(const std::string& code)
 {
-  //  std::cout << "compuute type for " << code << std::endl;
   if(code.front() == '"' &&  code.back() == '"')
     return Atom::String;
   if(isdigit(code.front()) ||  
@@ -79,7 +78,6 @@ Atom::Type Atom::computeType(const std::string& code)
   if(isdigit(code.front()) && code.size() == 1)
     return  Atom::Real;
   
-  //  std::cout << " is symb" << std::endl; 
   return Atom::Symbol;
 }
 
@@ -210,15 +208,13 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 {
   CellEnv* save = reinterpret_cast<CellEnv*>(env2);
   //  std::shared_ptr<CellEnv> keep = env;
-  std::cout << "set env " << &env << " was " << env2 << std::endl;
   env2 = &env;
   std::shared_ptr<Cell> cl = this->cells[0];
   if(cl->closure)
     {
-      std::cout << "call closure " << cl->val <<std::endl;
       return cl->closure(this, env);
     }
-  std::cout << "call closure" << std::endl;
+
   if(cl->val.compare("load") == 0)   
     {
       loadHandlers(this->cells[1]->eval(env)->val,
@@ -246,7 +242,6 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
     return (evalIt->second)(this, env);
   
   env2 = save;
-  std::cout << "restore env2 and destroy keep" << std::endl;
   return std::shared_ptr<Cell>(StringAtom::New());    
 }
 

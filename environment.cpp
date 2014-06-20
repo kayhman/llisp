@@ -14,7 +14,6 @@ Env<Key, Val>::Env()
 template <typename Key, typename Val>
 Env<Key, Val>::~Env()
 {
-  std::cout << "destroy env " << this << std::endl;  
 }
 
 template <typename Key, typename Val>
