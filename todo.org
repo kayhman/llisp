@@ -3,7 +3,9 @@
 ** TODO Support debug
 ** TODO Use only three types : list, symbol, numbers
 ** TODO add support for socket
-** TODO GÈrer les types lors de l'appel des fonctions interprÈtÈes
+** STARTED GÈrer les types lors de l'appel des fonctions interprÈtÈes
+** TODO Typer les fonctions
+** TODO Faire de l'infÈrence de type pour les symbols
 * [Compilation]
 ** TODO Cr√©√©r une fonction llvm pour chaque fonction standard
 *** TODO but -> permettre l'appel de fonctions interpr√©t√©es depuis des fonctions compil√©es.
