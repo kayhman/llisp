@@ -46,6 +46,7 @@ class Prototype
   const Cell::Type convert(const char c) const;
  public:
   Prototype(const std::string& protoString);
+  Prototype();
   const Cell::Type returnType() const;
   const Cell::Type argType(const int& i) const;
 };
@@ -112,7 +113,7 @@ struct SymbolAtom : public Atom
 {
   std::shared_ptr<Cell> code;
   std::shared_ptr<Sexp> args;
-  const Prototype prototype;
+  Prototype prototype;
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   Type retType;
   virtual Type computeType() const;
@@ -124,5 +125,5 @@ struct SymbolAtom : public Atom
   static std::list<std::shared_ptr<SymbolAtom> > pool;
   static void initGC();
  protected:
- SymbolAtom() : prototype("ff") {};
+ SymbolAtom() {};
 };

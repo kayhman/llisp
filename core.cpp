@@ -47,6 +47,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   };
 
   std::shared_ptr<Atom> inf = SymbolAtom::New(env, "<");
+  std::dynamic_pointer_cast<SymbolAtom>(inf)->prototype = Prototype("fff");
   inf->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];

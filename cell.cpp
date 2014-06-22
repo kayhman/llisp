@@ -9,6 +9,13 @@ Prototype::Prototype(const std::string& protoString) :
   
 }
 
+Prototype::Prototype() :
+  protoString("fff")
+{
+  
+}
+
+
 const Cell::Type Prototype::convert(const char c) const
 {
   switch(c) {

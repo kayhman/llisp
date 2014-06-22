@@ -206,7 +206,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
       //Add fmt arg
       std::stringstream ss;
       for (unsigned i = 1; i < sexp.cells.size(); ++i) {
-        switch (sexp.cells[i]->computeType()) {
+	switch (symbol->prototype.argType(i)) {
         case Cell::Type::Symbol :
           ss << "f"; //todo : set format according to sexp type
           break;
@@ -217,6 +217,7 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
           ss << "s"; //todo : set format according to sexp type
           break;
           }
+	
       }
       Constant* fmt = ConstantDataArray::getString(module->getContext(), ss.str(), true);
       Value* stringVar = builder.CreateAlloca(fmt->getType());
