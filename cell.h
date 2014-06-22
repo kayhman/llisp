@@ -20,7 +20,7 @@ struct Sexp;
 struct Cell
 {
   enum Quoting {Quote, BackQuote, NoneQ};
-  enum Type {Symbol, Real, String, Unknown};
+  enum Type {Symbol, Real, String, List, Unknown};
   bool compiled;
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
@@ -37,6 +37,17 @@ Cell() :quoting(NoneQ), compiled(false) {};
 
   friend std::ostream& operator<< (std::ostream& stream, const Cell& cell);
   friend std::ostream& operator>> (std::istream& stream, Cell& cell);
+};
+
+class Prototype
+{
+ private:
+  std::string protoString;
+  const Cell::Type convert(const char c) const;
+ public:
+  Prototype(const std::string& protoString);
+  const Cell::Type returnType() const;
+  const Cell::Type argType(const int& i) const;
 };
 
 struct Sexp : public Cell
@@ -101,6 +112,7 @@ struct SymbolAtom : public Atom
 {
   std::shared_ptr<Cell> code;
   std::shared_ptr<Sexp> args;
+  const Prototype prototype;
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   Type retType;
   virtual Type computeType() const;
@@ -112,5 +124,5 @@ struct SymbolAtom : public Atom
   static std::list<std::shared_ptr<SymbolAtom> > pool;
   static void initGC();
  protected:
-  SymbolAtom() {};
+ SymbolAtom() : prototype("ff") {};
 };

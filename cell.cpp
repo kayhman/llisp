@@ -1,6 +1,50 @@
 #include "cell.h"
 #include <dlfcn.h>
 
+
+
+Prototype::Prototype(const std::string& protoString) :
+  protoString(protoString)
+{
+  
+}
+
+const Cell::Type Prototype::convert(const char c) const
+{
+  switch(c) {
+  case 'f':
+    return Cell::Type::Real;
+  case 's':
+    return Cell::Type::String;
+  case 'a':
+    return Cell::Type::Symbol;
+  case 'l':
+    return Cell::Type::List;
+  default:
+    return Cell::Type::Unknown;
+  }
+}
+
+const Cell::Type Prototype::returnType() const
+{
+  return convert(protoString[0]);
+}
+
+const Cell::Type Prototype::argType(const int& i) const
+{
+  if(protoString.size() == 3 && protoString[2] == '*') {
+    return convert(protoString[1]);
+  }
+  else {
+    if(i < protoString.size()) {
+      return convert(protoString[i]);
+    }
+    else
+      return Cell::Type::Unknown;
+  }
+}
+
+
 bool isoperator(char c) {
      std::string const valid_chars = "+*-/!=<>\"";
      return valid_chars.find(c) != std::string::npos;
