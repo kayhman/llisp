@@ -139,8 +139,9 @@ bool evalHelper(std::istream& ss, Cell::CellEnv& env)
   std::shared_ptr<Cell> sexp = parse(ss, env);
   if(sexp)
     {
-      if(sexp->checkSyntax())
+      if(sexp->checkSyntax(env))
         {
+          dynamic_cast<Sexp*>(sexp.get())->inferFunctionType(env);
           std::cout << "> " << *sexp << std::endl;
           std::cout << "-> " << *sexp->eval(env) << std::endl;
         }

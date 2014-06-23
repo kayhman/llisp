@@ -10,7 +10,7 @@ Prototype::Prototype(const std::string& protoString) :
 }
 
 Prototype::Prototype() :
-  protoString("fff")
+  protoString("fff") //TODO :remove this dirty hack once the type inference works.
 {
   
 }
@@ -117,9 +117,9 @@ std::ostream& operator<< (std::ostream& stream, const SymbolAtom& atom)
   return stream;
 }
 
-bool Cell::checkSyntax() const
+bool Cell::checkSyntax(CellEnv& env) const
 {
-  return this->computeType() != Cell::Type::Unknown;
+  return this->computeType(env) != Cell::Type::Unknown;
 }
 
 Atom::Type Atom::computeType(const std::string& code)
@@ -200,7 +200,7 @@ std::shared_ptr<StringAtom> StringAtom::New()
   return atom;
 }
 
-Cell::Type SymbolAtom::computeType() const 
+Cell::Type SymbolAtom::computeType(Cell::CellEnv& env) const 
 {
   if(this->retType != Cell::Type::Unknown)
     return this->retType;
@@ -273,18 +273,68 @@ bool incompatibleType(Cell::Type ta, Cell::Type tb)
     (tb == Cell::Type::Real && ta == Cell::Type::String);
 }
 
-Cell::Type Sexp::computeType() const
+
+std::ostream& operator<< (std::ostream& stream, const Prototype& proto)
+{
+  stream << proto.protoString;
+  return stream;
+}
+
+Cell::Type Sexp::inferType(const std::string& symbolName) const
+{
+  if(this->cells.size()) {
+    std::shared_ptr<SymbolAtom> fun = std::dynamic_pointer_cast<SymbolAtom>(this->cells[0]);
+    if(fun) {
+      const Prototype proto = fun->prototype;
+      int argIdx = 1;
+      for(auto cIt = this->cells.begin() + 1 ; cIt != this->cells.end() ; cIt++) {
+        std::shared_ptr<SymbolAtom> arg = std::dynamic_pointer_cast<SymbolAtom>(*cIt);
+        if(arg) {
+          if(arg->val.compare(symbolName)) {
+            return proto.argType(argIdx);
+          }
+        }
+        else {
+          std::shared_ptr<Sexp> sx = std::dynamic_pointer_cast<Sexp>(*cIt);
+          if(sx) {
+            Cell::Type type = sx->inferType(symbolName);
+            if(type != Cell::Type::Unknown)
+              return type;
+          }
+        }
+        argIdx++;
+      }
+    }
+  }
+  
+  return Cell::Type::Unknown;
+}
+
+Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
+{
+  if(this->cells[0]->val.compare("defun") == 0) {
+    std::shared_ptr<Atom> fname = SymbolAtom::New(env, this->cells[1]->val);
+    std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(this->cells[2]);
+    std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(this->cells[3]);
+
+    for(auto aIt = args->cells.begin() ; aIt != args->cells.end() ; aIt++) {
+      std::cout << "arg " << (*aIt)->val << " has type " << body->inferType((*aIt)->val) << std::endl;
+    }
+  }
+}
+
+Cell::Type Sexp::computeType(Cell::CellEnv& env) const
 {
   if(this->cells.size()  == 1) 
-    return this->cells[0]->computeType();
+    return this->cells[0]->computeType(env);
   
   if(this->cells.size() == 2)
-    return this->cells[1]->computeType();
+    return this->cells[1]->computeType(env);
   
-  Cell::Type sType = this->cells[1]->computeType();
+  Cell::Type sType = this->cells[1]->computeType(env);
   for(auto cIt = this->cells.begin()+2 ; cIt != this->cells.end() ; cIt++)
-    if(incompatibleType((*cIt)->computeType(), sType))
-        return Cell::Type::Unknown;
+    if(incompatibleType((*cIt)->computeType(env), sType))
+      return Cell::Type::Unknown;
   return sType;
 }
 
