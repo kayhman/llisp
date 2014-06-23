@@ -326,6 +326,11 @@ Cell::Type Sexp::inferType(const std::string& symbolName) const
   return Cell::Type::Unknown;
 }
 
+Cell::Type Sexp::inferReturnType(Cell::CellEnv& env) const
+{
+  return Cell::Type::Unknown;
+}
+
 Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
 {
   if(this->cells[0]->val.compare("defun") == 0) {
@@ -335,6 +340,8 @@ Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
 
     std::stringstream ss;
     
+    
+
     for(auto aIt = args->cells.begin() ; aIt != args->cells.end() ; aIt++) {
       Cell::Type t = body->inferType((*aIt)->val);
       std::cout << "arg " << (*aIt)->val << " has type " << Prototype::convert(t) << std::endl;

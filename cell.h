@@ -26,6 +26,7 @@ struct Cell
   virtual ~Cell() {};
 Cell() :quoting(NoneQ), compiled(false) {};
   mutable std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)> closure;
+  mutable std::function<Type (Sexp*, Cell::CellEnv&)> closureType;
   mutable std::string val;
   mutable double real;
 
@@ -60,6 +61,7 @@ struct Sexp : public Cell
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
   virtual Type computeType(Cell::CellEnv& env) const;
   Type inferType(const std::string& symbolName) const;
+  Type inferReturnType(CellEnv& env) const;
   Type inferFunctionType(CellEnv& env) const;
   friend std::ostream& operator<< (std::ostream& stream, const Sexp& cell);
   static std::shared_ptr<Sexp> New();

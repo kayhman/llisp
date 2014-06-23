@@ -12,6 +12,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   };
 
   std::shared_ptr<Atom> plus = SymbolAtom::New(env, "+");
+  plus->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
   plus->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = 0;
@@ -21,6 +22,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   };
 
   std::shared_ptr<Atom> minus = SymbolAtom::New(env, "-");
+  minus->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
   minus->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = sexp->cells[1]->eval(env)->real;
@@ -30,6 +32,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   };
 
   std::shared_ptr<Atom> mult = SymbolAtom::New(env, "*");
+  mult->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
   mult->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = 1.0;
@@ -39,6 +42,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   };
 
   std::shared_ptr<Atom> div = SymbolAtom::New(env, "/");
+  div->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
   div->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = sexp->cells[1]->eval(env)->real;
@@ -48,6 +52,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
 
   std::shared_ptr<Atom> inf = SymbolAtom::New(env, "<");
   std::dynamic_pointer_cast<SymbolAtom>(inf)->prototype = Prototype("fff");
+  inf->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
   inf->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
@@ -64,10 +69,11 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   };
 
   std::shared_ptr<Atom> sup = SymbolAtom::New(env, ">");
-   sup->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+  sup->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
+  sup->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
-   
+    
     double a1 = m1->eval(env)->real;
     double a2 = m2->eval(env)->real;
  
@@ -79,8 +85,9 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
     return res;
   };
 
-   std::shared_ptr<Atom> eq = SymbolAtom::New(env, "eq");
-   eq->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> eq = SymbolAtom::New(env, "eq");
+  eq->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
+  eq->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> m1 = sexp->cells[1];
     std::shared_ptr<Cell> m2 = sexp->cells[2];
     
@@ -93,6 +100,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   };
 
   std::shared_ptr<Atom> iff = SymbolAtom::New(env, "if");
+  iff->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
   iff->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> test = sexp->cells[1];
     std::shared_ptr<Cell> True = sexp->cells[2];
