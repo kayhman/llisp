@@ -43,10 +43,11 @@ class Prototype
 {
  private:
   std::string protoString;
-  const Cell::Type convert(const char c) const;
  public:
   Prototype(const std::string& protoString);
   Prototype();
+  static const Cell::Type convert(const char c);
+  static const char convert(const Cell::Type t);
   const Cell::Type returnType() const;
   const Cell::Type argType(const int& i) const;
   friend std::ostream& operator<< (std::ostream& stream, const Prototype& proto);

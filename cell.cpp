@@ -16,7 +16,7 @@ Prototype::Prototype() :
 }
 
 
-const Cell::Type Prototype::convert(const char c) const
+const Cell::Type Prototype::convert(const char c)
 {
   switch(c) {
   case 'f':
@@ -32,19 +32,35 @@ const Cell::Type Prototype::convert(const char c) const
   }
 }
 
+const char Prototype::convert(const Cell::Type t)
+{
+  switch(t) {
+  case Cell::Type::Real:
+    return 'f';
+  case Cell::Type::String:
+    return 's';
+  case Cell::Type::Symbol:
+    return 'a';
+  case Cell::Type::List:
+    return 'l';
+  case Cell::Type::Unknown:
+    return 'u';
+  }
+}
+
 const Cell::Type Prototype::returnType() const
 {
-  return convert(protoString[0]);
+  return Prototype::convert(protoString[0]);
 }
 
 const Cell::Type Prototype::argType(const int& i) const
 {
   if(protoString.size() == 3 && protoString[2] == '*') {
-    return convert(protoString[1]);
+    return Prototype::convert(protoString[1]);
   }
   else {
     if(i < protoString.size()) {
-      return convert(protoString[i]);
+      return Prototype::convert(protoString[i]);
     }
     else
       return Cell::Type::Unknown;
@@ -317,9 +333,14 @@ Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(this->cells[2]);
     std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(this->cells[3]);
 
+    std::stringstream ss;
+    
     for(auto aIt = args->cells.begin() ; aIt != args->cells.end() ; aIt++) {
-      std::cout << "arg " << (*aIt)->val << " has type " << body->inferType((*aIt)->val) << std::endl;
+      Cell::Type t = body->inferType((*aIt)->val);
+      std::cout << "arg " << (*aIt)->val << " has type " << Prototype::convert(t) << std::endl;
+      ss << Prototype::convert(t);
     }
+    std::cout << "function type : " << ss.str() << std::endl;
   }
 }
 
