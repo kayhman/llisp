@@ -33,7 +33,7 @@ Cell() :quoting(NoneQ), compiled(false) {};
   Quoting quoting;
   std::weak_ptr<Cell> evaluated;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
-  virtual Type computeType(Cell::CellEnv& env) const = 0;
+  virtual Type evalType(CellEnv& env) = 0;
   bool checkSyntax(CellEnv& env) const;
 
   friend std::ostream& operator<< (std::ostream& stream, const Cell& cell);
@@ -43,8 +43,8 @@ Cell() :quoting(NoneQ), compiled(false) {};
 class Prototype
 {
  private:
-  std::string protoString;
  public:
+  std::string protoString;
   Prototype(const std::string& protoString);
   Prototype();
   static const Cell::Type convert(const char c);
@@ -59,7 +59,7 @@ struct Sexp : public Cell
   std::vector<std::shared_ptr<Cell> > cells;
   virtual ~Sexp() {};
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
-  virtual Type computeType(Cell::CellEnv& env) const;
+  virtual Type evalType(CellEnv& env);
   Type inferType(const std::string& symbolName) const;
   Type inferReturnType(CellEnv& env) const;
   Type inferFunctionType(CellEnv& env) const;
@@ -75,9 +75,9 @@ struct Atom : public Cell
 {
   virtual ~Atom() {};  
   static Type computeType(const std::string& code);
-  virtual Type computeType(Cell::CellEnv& env) const = 0;
   virtual void computeVal(const std::string& code) const = 0;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
+  virtual Type evalType(CellEnv& env) = 0;
   Atom(const std::string& val) {this->val = val;};
  
   friend std::ostream& operator<< (std::ostream& stream, const Atom& cell);
@@ -89,7 +89,7 @@ struct Atom : public Cell
 struct RealAtom : public Atom
 {
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
-  virtual Type computeType(Cell::CellEnv& env) const {return Type::Real;};
+  virtual Type evalType(CellEnv& env) {return Type::Real;};
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const RealAtom& cell);
   static std::shared_ptr<RealAtom> New();
@@ -104,7 +104,7 @@ struct RealAtom : public Atom
 struct StringAtom : public Atom
 {
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
-  virtual Type computeType(Cell::CellEnv& env) const {return Type::String;};
+  virtual Type evalType(CellEnv& env) {return Type::String;};
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const StringAtom& cell);
   static std::shared_ptr<StringAtom> New();
@@ -121,8 +121,7 @@ struct SymbolAtom : public Atom
   std::shared_ptr<Sexp> args;
   Prototype prototype;
   virtual std::shared_ptr<Cell> eval(CellEnv& env);
-  Type retType;
-  virtual Type computeType(Cell::CellEnv& env) const;
+  virtual Type evalType(CellEnv& env);
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);
   static std::shared_ptr<SymbolAtom> New(); 

@@ -100,7 +100,20 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
   };
 
   std::shared_ptr<Atom> iff = SymbolAtom::New(env, "if");
-  iff->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
+  iff->closureType = [](Sexp* sexp, Cell::CellEnv& env) { 
+    std::shared_ptr<Cell> test = sexp->cells[1];
+    std::shared_ptr<Cell> True = sexp->cells[2];
+    std::shared_ptr<Cell> False = sexp->cells[3];
+
+    Cell::Type trueType = True->evalType(env);
+    Cell::Type falseType = False->evalType(env);
+    
+    if(trueType == falseType)
+      return trueType;
+    else        
+      return Cell::Type::Unknown; //TODO : add error message.
+  };
+
   iff->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> test = sexp->cells[1];
     std::shared_ptr<Cell> True = sexp->cells[2];

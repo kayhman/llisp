@@ -46,10 +46,10 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 			 if(sexp->cells.size() == 0 && quoting == Cell::NoneQ)
 			    at = SymbolAtom::New(env, buffer);
 			 else
-			   at = SymbolAtom::New();
+			   at = SymbolAtom::New(env, buffer);
 		       }
 		     else
-		       at = SymbolAtom::New();
+		       at = SymbolAtom::New(env, buffer);
 		   }
 		 if(type == Atom::String)
                    at = StringAtom::New();

@@ -135,7 +135,7 @@ std::ostream& operator<< (std::ostream& stream, const SymbolAtom& atom)
 
 bool Cell::checkSyntax(CellEnv& env) const
 {
-  return this->computeType(env) != Cell::Type::Unknown;
+  return true;//TODO : check syntax ! this->computeType(env) != Cell::Type::Unknown;
 }
 
 Atom::Type Atom::computeType(const std::string& code)
@@ -189,6 +189,11 @@ std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
     }
 }
 
+Cell::Type SymbolAtom::evalType(CellEnv& env)
+{
+  return Prototype::convert(this->prototype.protoString[0]);
+}
+
 std::shared_ptr<Sexp> Sexp::New()
 {
   std::shared_ptr<Sexp> sexp(new Sexp);// = pool.back();
@@ -216,19 +221,10 @@ std::shared_ptr<StringAtom> StringAtom::New()
   return atom;
 }
 
-Cell::Type SymbolAtom::computeType(Cell::CellEnv& env) const 
-{
-  if(this->retType != Cell::Type::Unknown)
-    return this->retType;
-  else
-    return Type::Symbol;
-};
-
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
   std::shared_ptr<SymbolAtom> atom(new SymbolAtom);// = pool.back();
   //  pool.pop_back();
-  atom->retType = Cell::Type::Unknown;
   atom->evaluated = atom;
   //  gc.push_back(atom);
   return atom;
@@ -326,11 +322,6 @@ Cell::Type Sexp::inferType(const std::string& symbolName) const
   return Cell::Type::Unknown;
 }
 
-Cell::Type Sexp::inferReturnType(Cell::CellEnv& env) const
-{
-  return Cell::Type::Unknown;
-}
-
 Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
 {
   if(this->cells[0]->val.compare("defun") == 0) {
@@ -338,32 +329,25 @@ Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(this->cells[2]);
     std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(this->cells[3]);
 
+    std::cout << "infer type for " << fname->val << std::endl;
+
     std::stringstream ss;
-    
-    
 
     for(auto aIt = args->cells.begin() ; aIt != args->cells.end() ; aIt++) {
       Cell::Type t = body->inferType((*aIt)->val);
-      std::cout << "arg " << (*aIt)->val << " has type " << Prototype::convert(t) << std::endl;
       ss << Prototype::convert(t);
+
+      std::shared_ptr<SymbolAtom> sArg = std::dynamic_pointer_cast<SymbolAtom>(*aIt);
+      if(sArg)
+	sArg->prototype.protoString = Prototype::convert(t);
+      
     }
+    const std::string argsTypes = ss.str();
+    ss.str("");
+    ss << Prototype::convert(body->evalType(env)) << argsTypes;
+
     std::cout << "function type : " << ss.str() << std::endl;
   }
-}
-
-Cell::Type Sexp::computeType(Cell::CellEnv& env) const
-{
-  if(this->cells.size()  == 1) 
-    return this->cells[0]->computeType(env);
-  
-  if(this->cells.size() == 2)
-    return this->cells[1]->computeType(env);
-  
-  Cell::Type sType = this->cells[1]->computeType(env);
-  for(auto cIt = this->cells.begin()+2 ; cIt != this->cells.end() ; cIt++)
-    if(incompatibleType((*cIt)->computeType(env), sType))
-      return Cell::Type::Unknown;
-  return sType;
 }
 
 std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
@@ -401,6 +385,15 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
     return (evalIt->second)(this, env);
   
   return std::shared_ptr<Cell>(StringAtom::New());    
+}
+
+Cell::Type Sexp::evalType(CellEnv& env)
+{
+  std::shared_ptr<Cell> cl = this->cells[0];
+  if(cl->closure) {
+    return cl->closureType(this, env);
+  }
+  return Cell::Type::Unknown;
 }
 
 void Sexp::initGC()
