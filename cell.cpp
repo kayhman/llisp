@@ -10,7 +10,7 @@ Prototype::Prototype(const std::string& protoString) :
 }
 
 Prototype::Prototype() :
-  protoString("fff") //TODO :remove this dirty hack once the type inference works.
+  protoString("") //TODO :remove this dirty hack once the type inference works.
 {
   
 }

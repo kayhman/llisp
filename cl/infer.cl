@@ -29,11 +29,11 @@
       (length sb))
 		(+ a 1)))
 
-(defun cmplast (sa sb a)
+(defun three (sa sb zz)
   (progn
 	  (if (> (length sa) (length sb))
       (length sa)
       (length sb))
-		a))
+		zz))
 
 
