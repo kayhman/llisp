@@ -5,4 +5,4 @@
 			 (fibo (- N 2)))))
 (compile "fibo")
 
-(time (fibo 20))
+(time (fibo 40))
