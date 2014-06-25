@@ -7,7 +7,8 @@
 ** DONE Typer les fonctions
 ** DONE Faire de l'infÈrence de type pour les arguments des fonctions
 ** DONE InfÈrer le type de retour.
-** TODO SÈparer les specials des functions
+** DONE SÈparer les specials des functions
+** TODO ne pas utiliser le mÍme symbol en dehors d'un fonction? (fait pour l'infÈrence de type)
 * [Compilation]
 ** TODO Cr√©√©r une fonction llvm pour chaque fonction standard
 *** TODO but -> permettre l'appel de fonctions interpr√©t√©es depuis des fonctions compil√©es.
