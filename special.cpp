@@ -74,8 +74,6 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
     return sexp->cells.back()->eval(env);
   };
 
-
-
   std::shared_ptr<Atom> setq = SymbolAtom::New(env, "setq");
   setq->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     auto it = env.find(sexp->cells[1]->val);
