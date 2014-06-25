@@ -130,5 +130,7 @@ struct SymbolAtom : public Atom
   static std::list<std::shared_ptr<SymbolAtom> > pool;
   static void initGC();
  protected:
- SymbolAtom() {};
+ SymbolAtom() {
+   this->closureType = [this](Sexp* sexp, Cell::CellEnv& env) { return this->prototype.returnType(); };
+ };
 };
