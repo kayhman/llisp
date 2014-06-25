@@ -1,0 +1,17 @@
+* [General] 
+** TODO Support trace
+** TODO Support debug
+** TODO Use only three types : list, symbol, numbers
+** TODO add support for socket
+** DONE GÈrer les types lors de l'appel des fonctions interprÈtÈes
+** TODO Typer les fonctions
+** DONE Faire de l'infÈrence de type pour les arguments des fonctions
+** TODO InfÈrer le type de retour.
+* [Compilation]
+** TODO Cr√©√©r une fonction llvm pour chaque fonction standard
+*** TODO but -> permettre l'appel de fonctions interpr√©t√©es depuis des fonctions compil√©es.
+** TODO D√©terminer le type de retour d'une fonction compil√©e.
+* org-mode configuration
+#+SEQ_TODO: TODO(t) STARTED(s) WAITING(w) APPT(a) | DONE(d) CANCELLED(c) DEFERRED(f)
+#+STARTUP: hidestars
+#+STARTUP: content

@@ -1,0 +1,13 @@
+Lisp 1 2
+========
+* Lisp 2 : 2 environnements :
+** Fonctionnel (paramètre en première position). !-> distinction forme spéciale / fonction
+** Paramétrique (tout saut première pos)
+* Distinctions importantes :
+** formes spéciales != fonction != forme syntaxique (sim macro)
+* Récursion 
+** Solution: liaisons non initialisées
+* Environnement
+** shallow / deep binding
+* variables dynamique
+** Environnement dédié
