@@ -10,7 +10,7 @@ Prototype::Prototype(const std::string& protoString) :
 }
 
 Prototype::Prototype() :
-  protoString("fff") //TODO :remove this dirty hack once the type inference works.
+  protoString("") //TODO :remove this dirty hack once the type inference works.
 {
   
 }
@@ -302,7 +302,7 @@ Cell::Type Sexp::inferType(const std::string& symbolName) const
       for(auto cIt = this->cells.begin() + 1 ; cIt != this->cells.end() ; cIt++) {
         std::shared_ptr<SymbolAtom> arg = std::dynamic_pointer_cast<SymbolAtom>(*cIt);
         if(arg) {
-          if(arg->val.compare(symbolName)) {
+          if(arg->val.compare(symbolName) == 0) {
             return proto.argType(argIdx);
           }
         }
@@ -328,8 +328,6 @@ Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
     std::shared_ptr<Atom> fname = SymbolAtom::New(env, this->cells[1]->val);
     std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(this->cells[2]);
     std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(this->cells[3]);
-
-    std::cout << "infer type for " << fname->val << std::endl;
 
     std::stringstream ss;
 

@@ -19,3 +19,21 @@
   (if (> (length sa) (length sb))
     (length sa)
     (length sb)))
+
+
+
+(defun cmplast (sa sb a)
+  (progn
+	  (if (> (length sa) (length sb))
+      (length sa)
+      (length sb))
+		(+ a 1)))
+
+(defun three (sa sb zz)
+  (progn
+	  (if (> (length sa) (length sb))
+      (length sa)
+      (length sb))
+		zz))
+
+

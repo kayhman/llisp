@@ -4,9 +4,12 @@
 ** TODO Use only three types : list, symbol, numbers
 ** TODO add support for socket
 ** DONE GÈrer les types lors de l'appel des fonctions interprÈtÈes
-** TODO Typer les fonctions
+** DONE Typer les fonctions
 ** DONE Faire de l'infÈrence de type pour les arguments des fonctions
-** TODO InfÈrer le type de retour.
+** DONE InfÈrer le type de retour.
+** DONE SÈparer les specials des functions
+** TODO ne pas utiliser le mÍme symbol en dehors d'un fonction? (fait pour l'infÈrence de type)
+** TODO Faire de la compilation JIT pour le type undefined (latter type inference)
 * [Compilation]
 ** TODO Cr√©√©r une fonction llvm pour chaque fonction standard
 *** TODO but -> permettre l'appel de fonctions interpr√©t√©es depuis des fonctions compil√©es.
