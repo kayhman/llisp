@@ -171,6 +171,8 @@ int main(int argc, char* argv[])
   StringAtom::initGC();
   SymbolAtom::initGC();
 
+  std::stringstream special("(load \"./special.so\" \"registerSpecialHandlers\")");
+  evalHelper(special, env);
   std::stringstream core("(load \"./core.so\" \"registerCoreHandlers\")");
   evalHelper(core, env);
   std::stringstream func("(load \"./functional.so\" \"registerFunctionalHandlers\")");
