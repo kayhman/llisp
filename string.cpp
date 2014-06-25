@@ -14,7 +14,6 @@ extern "C" void registerStringHandlers(Cell::CellEnv& env)
 
   std::shared_ptr<Atom> length = SymbolAtom::New(env, "length");
   std::dynamic_pointer_cast<SymbolAtom>(length)->prototype = Prototype("fs");
-  length->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
   length->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> string  = sexp->cells[1];    
     std::stringstream ss;
