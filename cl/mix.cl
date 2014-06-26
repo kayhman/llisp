@@ -1,6 +1,10 @@
 (defun sub (e f)
 	(- e f))
 
+(defun add (e f)
+	(- e f))
+
+
 (add 3 4)
 
 (defun mult (c d)
