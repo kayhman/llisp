@@ -18,6 +18,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
     res->real = 0;
     std::for_each(sexp->cells.begin()+1, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real += cell->eval(env)->real;});
 
+    res->val = std::to_string(res->real);
     return res;
   };
 
@@ -28,6 +29,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
     res->real = sexp->cells[1]->eval(env)->real;
     std::for_each(sexp->cells.begin()+2, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real -= cell->eval(env)->real;});
 
+    res->val = std::to_string(res->real);
     return res;
   };
 
@@ -38,6 +40,7 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
     res->real = 1.0;
     std::for_each(sexp->cells.begin()+1, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real *= cell->eval(env)->real;});
 
+    res->val = std::to_string(res->real);
     return res;
   };
 
@@ -47,6 +50,8 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
     std::shared_ptr<Cell> res = RealAtom::New();
     res->real = sexp->cells[1]->eval(env)->real;
     std::for_each(sexp->cells.begin()+2, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){res->real /= cell->eval(env)->real;});
+
+    res->val = std::to_string(res->real);
     return res;
   };
 
@@ -64,6 +69,8 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
       res->real = 1.0;
     else
       res->real = 0.;
+
+    res->val = std::to_string(res->real);
     return res;
   };
 
@@ -81,6 +88,8 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
       res->real = 1.0;
     else
       res->real = 0.;
+
+    res->val = std::to_string(res->real);
     return res;
   };
 }
