@@ -11,10 +11,26 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
     std::shared_ptr<Cell> m2 = sexp->cells[2];
     
     std::shared_ptr<Cell> res = SymbolAtom::New();
-    if (m1->eval(env)->val.compare(m2->eval(env)->val) == 0)
-      res->real = 1.0;
-    else
+    if(m1->eval(env)->evalType(env) != m1->eval(env)->evalType(env)) {
       res->real = 0.;
+      res->val = std::to_string(res->real);
+      return res;
+    }
+
+    if(m1->eval(env)->evalType(env) == Cell::Type::String) {
+      if (m1->eval(env)->val.compare(m2->eval(env)->val) == 0)
+        res->real = 1.0;
+      else
+        res->real = 0.;
+    }
+
+    if(m1->eval(env)->evalType(env) == Cell::Type::Real) {
+      if (m1->eval(env)->real == m2->eval(env)->real)
+        res->real = 1.0;
+      else
+        res->real = 0.;
+    }
+    res->val = std::to_string(res->real);
     return res;
   };
 
