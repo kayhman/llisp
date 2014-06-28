@@ -377,22 +377,14 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  typedef int (*fibType)(int, int);
 	  //replace evaluated closure by compiled code
 	  fun->closure = [fname, bodyF, module, protoArgs](Sexp* self, Cell::CellEnv& dummy) mutable {
-	    std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	    std::vector<std::shared_ptr<Cell> > args;
 	    for(int c = 0 ; c < protoArgs->cells.size() ; c++)
 	      {
 		std::shared_ptr<Cell> val = self->cells[c+1]->eval(dummy);
 		args.push_back(val);
-		std::shared_ptr<SymbolAtom> symb = std::dynamic_pointer_cast<SymbolAtom>(val);
-		if(symb && dummy.find(symb->val) != dummy.end())
-		  newEnv[protoArgs->cells[c]->val] = dummy[symb->val];
-		else
-		  newEnv[protoArgs->cells[c]->val] = val;
 	      }
 	    
-	    //	    std::cout<< dummy << std::endl;
-	    dummy.addEnvMap(&newEnv);
-	    //	    std::cout<< dummy << std::endl;
+
 	    std::stringstream ss;
 	    ss << fname << "_call";
 
@@ -405,9 +397,6 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	    std::shared_ptr<Cell> res(RealAtom::New());
 
 	    res->real = execF();
-
-	    dummy.removeEnv();
-          
 	    return res;
 	  };
 	  return fun->code;
