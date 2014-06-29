@@ -65,8 +65,12 @@ llvm::Value* codegen(const StringAtom& atom, llvm::LLVMContext& context, llvm::I
 
 llvm::Value* codegen(const SymbolAtom& atom, llvm::LLVMContext& context, llvm::IRBuilder<>& builder,llvm::Module *module)
 {
-  Value* V = NamedValues[atom.val];
-  return V;// ? V : ErrorV("Unknown variable name");
+  Value* V = NULL;
+  if(NamedValues.find(atom.val) != NamedValues.end())
+    V = NamedValues[atom.val];
+  else
+    std::cout << "no val for " << atom.val << std::endl;    
+  return V;
   //return ConstantDataArray::getString(context, atom.val);
 }
 
@@ -225,8 +229,10 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
 
       ArgsV.push_back(stringVar);
       
+      std::cout << "call interpreted " << symbol->val << " " << sexp << std::endl;
       //add var args
       for (unsigned i = 1; i < sexp.cells.size(); ++i) {
+        std::cout << "call arg " << *sexp.cells[i] << std::endl;
 	ArgsV.push_back(codegen(*sexp.cells[i], context, builder, module));
       }
       ss.str("");
@@ -262,6 +268,8 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
   const StringAtom* string = dynamic_cast<const StringAtom*>(&cell);
   const Sexp* sexp = dynamic_cast<const Sexp*>(&cell);
  
+  std::cout << "s " << symb << " r " << real << " S " << string << " sx " << sexp << std::endl; 
+
   if(symb)
     return codegen(*symb, context, builder, module);
   if(real)
@@ -276,6 +284,7 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
 
 llvm::Function* compileBody(const std::string& name, const Sexp& body, const std::vector<const Cell*> args, llvm::Module *module)
 {
+  std::cout << "compiled body " << std::endl;
   NamedValues.clear();
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
@@ -294,7 +303,6 @@ llvm::Function* compileBody(const std::string& name, const Sexp& body, const std
   unsigned Idx = 0;
   for (Function::arg_iterator AI = compiledF->arg_begin(); Idx != args.size(); ++AI, ++Idx) {
     AI->setName(args[Idx]->val);
-    
     // Add arguments to variable symbol table.
     NamedValues[args[Idx]->val] = AI;
   }
@@ -339,7 +347,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
   InitializeNativeTarget();
    
   llvm::LLVMContext& context = llvm::getGlobalContext();
-  llvm::Module *module = new llvm::Module("elisp", context);
+  llvm::Module* module = new llvm::Module("elisp", context);
   llvm::IRBuilder<> builder(context);
   std::string errStr;
   EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
@@ -348,7 +356,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
   
   std::shared_ptr<Atom> compile = SymbolAtom::New(env, "compile");
-  compile->closure = [module](Sexp* sexp, Cell::CellEnv& env) {
+  compile->closure = [module](Sexp* sexp, Cell::CellEnv& env) mutable {
     const std::string& fname = sexp->cells[1]->val;
     auto clIt = env.func.find(fname);
     if(clIt != env.func.end())
@@ -374,46 +382,25 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  typedef int (*fibType)(int, int);
 	  //replace evaluated closure by compiled code
 	  fun->closure = [fname, bodyF, module, protoArgs](Sexp* self, Cell::CellEnv& dummy) mutable {
-
-	    std::map<std::string, std::shared_ptr<Cell> > newEnv;
+	    std::vector<std::shared_ptr<Cell> > args;
 	    for(int c = 0 ; c < protoArgs->cells.size() ; c++)
 	      {
 		std::shared_ptr<Cell> val = self->cells[c+1]->eval(dummy);
-		std::shared_ptr<SymbolAtom> symb = std::dynamic_pointer_cast<SymbolAtom>(val);
-		if(symb && dummy.find(symb->val) != dummy.end())
-		  newEnv[protoArgs->cells[c]->val] = dummy[symb->val];
-		else
-		  newEnv[protoArgs->cells[c]->val] = val;
+		args.push_back(val);
 	      }
-
-	    std::vector<std::shared_ptr<Cell> > args;
-	    for(auto aIt = self->cells.begin()+1 ; aIt != self->cells.end() ; aIt++)
-	      {
-		if(dummy.find((*aIt)->val) != dummy.end())
-		  args.push_back(dummy[(*aIt)->val]);
-		else
-		  args.push_back(*aIt);		
-	      }
-
-
-	  
-	    dummy.addEnvMap(&newEnv);
-
+	    
 	    std::stringstream ss;
 	    ss << fname << "_call";
 
 	    Function* callerF = createCaller(ss.str(), bodyF, args, module);
 	    typedef double (*ExecF)();
 
-      //module->dump();
+            // module->dump();
 
 	    ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
 	    std::shared_ptr<Cell> res(RealAtom::New());
 
 	    res->real = execF();
-
-	    dummy.removeEnv();
-          
 	    return res;
 	  };
 	  return fun->code;

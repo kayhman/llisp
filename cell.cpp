@@ -10,7 +10,7 @@ Prototype::Prototype(const std::string& protoString) :
 }
 
 Prototype::Prototype() :
-  protoString("") //TODO :remove this dirty hack once the type inference works.
+  protoString("")
 {
   
 }
@@ -344,7 +344,9 @@ Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
     ss.str("");
     ss << Prototype::convert(body->evalType(env)) << argsTypes;
 
-    std::cout << "function type : " << ss.str() << std::endl;
+    std::shared_ptr<SymbolAtom> sFun = std::dynamic_pointer_cast<SymbolAtom>(fname);
+    if(sFun)
+      sFun->prototype.protoString = ss.str();
   }
 }
 

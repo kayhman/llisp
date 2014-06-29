@@ -1,5 +1,5 @@
 CPP=g++
-CFLAGS=-g -std=c++11 -ldl -O3
+CFLAGS=-std=c++11 -ldl -O3
 LLVM_CFLAGS=-I/usr/lib/llvm-3.5/include  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O3 -fomit-frame-pointer -fvisibility-inlines-hidden -fno-exceptions -fPIC -Woverloaded-virtual -ffunction-sections -fdata-sections -Wcast-qual
 LLVM_CFLAGS=`llvm-config-3.5 --cflags`
 LLVM_LIB=`llvm-config-3.5 --libs`
