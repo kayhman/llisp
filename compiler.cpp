@@ -303,6 +303,7 @@ llvm::Function* compileBody(const std::string& name, const Sexp& body, const std
   unsigned Idx = 0;
   for (Function::arg_iterator AI = compiledF->arg_begin(); Idx != args.size(); ++AI, ++Idx) {
     AI->setName(args[Idx]->val);
+    std::cout << " -- add arg  " << args[Idx]->val << std::endl;
     // Add arguments to variable symbol table.
     NamedValues[args[Idx]->val] = AI;
   }
@@ -382,12 +383,12 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  typedef int (*fibType)(int, int);
 	  //replace evaluated closure by compiled code
 	  fun->closure = [fname, bodyF, module, protoArgs](Sexp* self, Cell::CellEnv& dummy) mutable {
-	    std::vector<std::shared_ptr<Cell> > args;
-	    for(int c = 0 ; c < protoArgs->cells.size() ; c++)
-	      {
+	  std::vector<std::shared_ptr<Cell> > args;
+	  for(int c = 0 ; c < protoArgs->cells.size() ; c++)
+	    {
 		std::shared_ptr<Cell> val = self->cells[c+1]->eval(dummy);
 		args.push_back(val);
-	      }
+	    }
 	    
 	    std::stringstream ss;
 	    ss << fname << "_call";
