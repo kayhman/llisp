@@ -134,7 +134,7 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
        return std::shared_ptr<Cell>(NULL);
 }
 
-bool evalHelper(std::istream& ss, Cell::CellEnv& env)
+bool evalHelper(std::istream& ss, Cell::CellEnv& env, bool verbose = true)
 {
   std::shared_ptr<Cell> sexp = parse(ss, env);
   if(sexp)
@@ -142,8 +142,11 @@ bool evalHelper(std::istream& ss, Cell::CellEnv& env)
       if(sexp->checkSyntax(env))
         {
           dynamic_cast<Sexp*>(sexp.get())->inferFunctionType(env);
-          std::cout << "> " << *sexp << std::endl;
-          std::cout << "-> " << *sexp->eval(env) << std::endl;
+	  std::shared_ptr<Cell> res = sexp->eval(env);
+	  if(verbose) {
+	    std::cout << "> " << *sexp << std::endl;
+	    std::cout << "-> " << *res << std::endl;
+	  }
         }
       else
         std::cout << "Syntax Error" << std::endl;
@@ -153,11 +156,11 @@ bool evalHelper(std::istream& ss, Cell::CellEnv& env)
     return false;
 }
 
-void loadFile(const std::string& file, Cell::CellEnv& env)
+void loadFile(const std::string& file, Cell::CellEnv& env, bool verbose = true)
 {
   std::ifstream in(file);
   while(!in.eof())
-    if(!evalHelper(in, env))
+    if(!evalHelper(in, env, verbose))
       break;
 }
 int main(int argc, char* argv[])
@@ -172,32 +175,39 @@ int main(int argc, char* argv[])
   SymbolAtom::initGC();
 
   std::stringstream special("(load \"./special.so\" \"registerSpecialHandlers\")");
-  evalHelper(special, env);
+  evalHelper(special, env, false);
   std::stringstream core("(load \"./core.so\" \"registerCoreHandlers\")");
-  evalHelper(core, env);
+  evalHelper(core, env, false);
   std::stringstream func("(load \"./functional.so\" \"registerFunctionalHandlers\")");
-  evalHelper(func, env);
+  evalHelper(func, env, false);
   std::stringstream str("(load \"./string.so\" \"registerStringHandlers\")");
-  evalHelper(str, env);
+  evalHelper(str, env, false);
+  std::stringstream list("(load \"./list.so\" \"registerListHandlers\")");
+  evalHelper(list, env, false);
   std::stringstream bench("(load \"./bench.so\" \"registerBenchHandlers\")");
-  evalHelper(bench, env);
+  evalHelper(bench, env, false);
   std::stringstream comp("(load \"./compiler.so\" \"registerCompilerHandlers\")");
-  evalHelper(comp, env);
+  evalHelper(comp, env, false);
 
-  if(argc == 2)
-    loadFile(argv[1], env);
+  bool verbose = true;
+  if(argc >= 3) 
+    if(std::string("-q").compare(argv[2]) == 0)
+      verbose = false;
+    
+  if(argc >= 2)
+    loadFile(argv[1], env, verbose);
+
 
   while(true)
     {
       std::cout << (curLine.size() ? "     > " : "elisp> ");
       std::getline(std::cin, in);
-      if(std::cin.eof())
-			 {
-          std::cout << "goobye" << std::endl;
-          break;
-        }
-			size_t posc = in.find(";");
-			size_t posp = in.find("(");
+      if(std::cin.eof() || in.compare(":exit") == 0) {
+	std::cout << "goobye" << std::endl;
+	break;
+      }
+      size_t posc = in.find(";");
+      size_t posp = in.find("(");
       if(posc < posp)
         {
           std::cout << "skip comment" << std::endl;
@@ -206,7 +216,7 @@ int main(int argc, char* argv[])
  
       curLine += " " +  in;
       std::stringstream cl(curLine);
-      if(evalHelper(cl, env))
+      if(evalHelper(cl, env, verbose))
         curLine = "";
     }
   

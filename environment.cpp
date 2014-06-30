@@ -90,7 +90,6 @@ std::ostream& operator<< (std::ostream& stream, const Env<Key, Val>& env)
 
 template<typename K, typename V> std::map<K, V> Env<K,V>::top;
 template<typename K, typename V> std::map<K, V> Env<K,V>::func;
-template<typename K, typename V> std::map<K, std::function<V(Sexp* sexp, Env<K,V>& env)> > Env<K,V>::evalHandlers;
 
 template std::ostream& operator<< (std::ostream& stream, const Env<std::string, std::shared_ptr<Cell> >& env);
 template class  Env<std::string,std::shared_ptr<Cell> >;

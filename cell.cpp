@@ -380,10 +380,6 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       return res;
   }
 
-  auto evalIt = env.evalHandlers.find(cl->val);
-  if(evalIt != env.evalHandlers.end())
-    return (evalIt->second)(this, env);
-  
   return std::shared_ptr<Cell>(StringAtom::New());    
 }
 
@@ -393,7 +389,7 @@ Cell::Type Sexp::evalType(CellEnv& env)
   if(cl->closure) {
     return cl->closureType(this, env);
   }
-  return Cell::Type::Unknown;
+  return Cell::Type::List;
 }
 
 void Sexp::initGC()
