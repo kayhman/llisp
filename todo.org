@@ -13,6 +13,7 @@
 ** DONE Debugger mix.cl
 ** TODO G�rer les strings � la compilation
 ** DONE Ajouter when pour les tests
+** TODO Fixer bug parsing string avec espace : "lapin pierre"
 * [Compilation]
 ** TODO Créér une fonction llvm pour chaque fonction standard
 *** TODO but -> permettre l'appel de fonctions interprétées depuis des fonctions compilées.
