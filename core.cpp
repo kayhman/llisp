@@ -92,4 +92,23 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
     res->val = std::to_string(res->real);
     return res;
   };
+  
+  std::shared_ptr<Atom> nott = SymbolAtom::New(env, "not");
+  std::dynamic_pointer_cast<SymbolAtom>(nott)->prototype = Prototype("fu");
+  nott->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Cell> m1 = sexp->cells[1]->eval(env);
+
+    std::shared_ptr<Cell> res = RealAtom::New();
+    if(m1->evalType(env) == Cell::Type::Real) {
+      if(m1->real == 0.) {
+        res->real = 1.0 ;
+        return res;
+      }
+    }
+    else {
+      res->real = 0.;
+      return res;
+    }
+  };
+
 }

@@ -46,7 +46,7 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
     std::shared_ptr<Cell> m1 = sexp->cells[1]->eval(env);
     std::shared_ptr<Cell> m2 = sexp->cells[2]->eval(env);
     
-    std::shared_ptr<Cell> res = SymbolAtom::New();
+    std::shared_ptr<Cell> res = RealAtom::New();
     res->real = equal(m1, m2, env);
     res->val = std::to_string(res->real);
 
