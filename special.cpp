@@ -79,6 +79,29 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
       return False->eval(env);
   };
 
+
+  std::shared_ptr<Atom> when = SymbolAtom::New(env, "when");
+  when->closureType = [](Sexp* sexp, Cell::CellEnv& env) { 
+    std::shared_ptr<Cell> test = sexp->cells[1];
+    std::shared_ptr<Cell> True = sexp->cells[2];
+
+    Cell::Type trueType = True->evalType(env);
+    return trueType;
+  };
+
+  when->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Cell> test = sexp->cells[1];
+    std::shared_ptr<Cell> True = sexp->cells[2];
+    
+    if(test->eval(env)->real)
+      return True->eval(env);
+    else {
+      std::shared_ptr<Cell> res = RealAtom::New();
+      res->real = 0.;
+      return res;
+    }
+  };
+
   std::shared_ptr<Atom> quote = SymbolAtom::New(env, "quote");
   quote->closure = [](Sexp* sexp, Cell::CellEnv& env) {
       return sexp->cells[1];
