@@ -104,9 +104,26 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
     return sexp->cells.back()->evalType(env);
   };
 
+
   progn->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::for_each(sexp->cells.begin()+1, sexp->cells.end()-1, [&](std::shared_ptr<Cell> cell){cell->eval(env);});
     return sexp->cells.back()->eval(env);
+  };
+
+  std::shared_ptr<Atom> andd = SymbolAtom::New(env, "and");
+  andd->closureType = [](Sexp* sexp, Cell::CellEnv& env) { 
+    return sexp->cells.back()->evalType(env);
+  };
+  
+  andd->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Cell> res;
+    for(auto cIt = sexp->cells.begin()+1 ;cIt != sexp->cells.end() ; cIt++) {
+      res = (*cIt)->eval(env);
+      if(res->evalType(env) == Cell::Type::Real)
+        if(res->real == 0)
+          break;
+    }
+    return res;
   };
 
 
