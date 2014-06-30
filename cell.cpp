@@ -389,7 +389,7 @@ Cell::Type Sexp::evalType(CellEnv& env)
   if(cl->closure) {
     return cl->closureType(this, env);
   }
-  return Cell::Type::Unknown;
+  return Cell::Type::List;
 }
 
 void Sexp::initGC()
