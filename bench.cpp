@@ -3,10 +3,11 @@
 #include <ctime>
 #include <chrono>
 
-
 extern "C" void registerBenchHandlers(Cell::CellEnv& env)
 {
-  env.evalHandlers["time"] = [](Sexp* sexp, Cell::CellEnv& env) {
+  std::shared_ptr<Atom> time = SymbolAtom::New(env, "time");
+  std::dynamic_pointer_cast<SymbolAtom>(time)->prototype = Prototype("ff*");
+  time->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> exp = sexp->cells[1];
     auto t_start = std::chrono::high_resolution_clock::now();
     std::shared_ptr<Cell> res = exp->eval(env);

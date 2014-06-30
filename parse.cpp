@@ -179,6 +179,8 @@ int main(int argc, char* argv[])
   evalHelper(func, env);
   std::stringstream str("(load \"./string.so\" \"registerStringHandlers\")");
   evalHelper(str, env);
+  std::stringstream list("(load \"./list.so\" \"registerListHandlers\")");
+  evalHelper(list, env);
   std::stringstream bench("(load \"./bench.so\" \"registerBenchHandlers\")");
   evalHelper(bench, env);
   std::stringstream comp("(load \"./compiler.so\" \"registerCompilerHandlers\")");

@@ -6,7 +6,7 @@ LLVM_LIB=`llvm-config-3.5 --libs`
 LLVM_LINK=`llvm-config-3.5 --ldflags`
 
 
-all: libenvironment.so libcell.so string.so special.so core.so functional.so bench.so compiler.so elisp
+all: libenvironment.so libcell.so string.so list.so special.so core.so functional.so bench.so compiler.so elisp
 	
 clean:
 	rm -rf *.so elisp
@@ -18,6 +18,9 @@ libcell.so: cell.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -L. -lenvironment -o $@ $?
 
 string.so: string.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
+
+list.so: list.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
 core.so: core.cpp
