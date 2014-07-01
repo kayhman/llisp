@@ -13,10 +13,11 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
      char ch;
      std::string buffer;
      Cell::Quoting quoting = Cell::NoneQ;
+     bool stringing = false;
      for(int cc = 0 ;  ; ++cc)
      {
           ss >> std::noskipws >> ch;
-          if(ch == '(' || ch == ' ' || ch == ')' || ch == '\n')
+          if(!stringing && (ch == '(' || ch == ' ' || ch == ')' || ch == '\n'))
           {
                if(ch == '(')
                {
@@ -63,7 +64,7 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		 if(quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx = Sexp::New();
-		     std::shared_ptr<Atom> quote = SymbolAtom::New();
+		     std::shared_ptr<Atom> quote = SymbolAtom::New(env, quoting == Cell::Quote ? "quote" : "backquote");
 		     //quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
 		     
@@ -84,7 +85,7 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		 if(sexp->quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx = Sexp::New();
-		     std::shared_ptr<Atom> quote =SymbolAtom::New();
+		     std::shared_ptr<Atom> quote =SymbolAtom::New(env, sexp->quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 
@@ -113,14 +114,21 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
                newToken = false;
           }
       
-          if(isalnum(ch) || isoperator(ch) || isquote(ch) || ch == '.')
-          {
-            if(ch == '\'')
-	      quoting = Cell::Quote;
-	    else if(ch == '`')
-              quoting = Cell::BackQuote;
-            else
-	      buffer.push_back(ch);
+          if(isalnum(ch) || isoperator(ch) || isquote(ch) || ch == '.'
+             || (ch == ' ' && stringing))
+            {
+              if(ch == '\'')
+                quoting = Cell::Quote;
+              else if(ch == '`')
+                quoting = Cell::BackQuote;
+              else if(ch == '"') {
+                buffer.push_back(ch);
+                stringing = !stringing;
+              }
+              else if(ch == ' ' && stringing)
+                buffer.push_back(ch);
+              else
+                buffer.push_back(ch);
           }
 
           if((sexps.size() == 0 && sexp != NULL) 
@@ -169,11 +177,6 @@ int main(int argc, char* argv[])
   std::string in;
   std::string curLine;
 
-  Sexp::initGC();
-  RealAtom::initGC();
-  StringAtom::initGC();
-  SymbolAtom::initGC();
-
   std::stringstream special("(load \"./special.so\" \"registerSpecialHandlers\")");
   evalHelper(special, env, false);
   std::stringstream core("(load \"./core.so\" \"registerCoreHandlers\")");
@@ -202,7 +205,7 @@ int main(int argc, char* argv[])
     {
       std::cout << (curLine.size() ? "     > " : "elisp> ");
       std::getline(std::cin, in);
-      if(std::cin.eof() || in.compare(":exit") == 0) {
+      if(std::cin.eof()) {
 	std::cout << "goobye" << std::endl;
 	break;
       }

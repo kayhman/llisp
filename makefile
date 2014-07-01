@@ -4,43 +4,47 @@ LLVM_CFLAGS=-I/usr/lib/llvm-3.5/include  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTAN
 LLVM_CFLAGS=`llvm-config-3.5 --cflags`
 LLVM_LIB=`llvm-config-3.5 --libs`
 LLVM_LINK=`llvm-config-3.5 --ldflags`
+TESTS=$(wildcard tests/*.cl)
+
+all: libenvironment.so libcell.so string.so list.so special.so core.so functional.so bench.so compiler.so llisp
+
+test: $(TESTS)
+	make $^
+
+.PHONY: $(TESTS)
+$(TESTS):
+	./llisp $@ -q
 
 
-all: libenvironment.so libcell.so string.so list.so special.so core.so functional.so bench.so compiler.so elisp
-	
 clean:
-	rm -rf *.so elisp
+	rm -rf *.so llisp
 
-libenvironment.so: environment.cpp
+libenvironment.so: src/environment.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-libcell.so: cell.cpp
+libcell.so: src/cell.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -L. -lenvironment -o $@ $?
 
-string.so: string.cpp
+string.so: src/string.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-list.so: list.cpp
+list.so: src/list.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-core.so: core.cpp
+core.so: src/core.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-special.so: special.cpp
+special.so: src/special.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-functional.so: functional.cpp
+functional.so: src/functional.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-bench.so: bench.cpp
+bench.so: src/bench.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
-compiler.so: compiler.cpp
+compiler.so: src/compiler.cpp
 	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl -lffi -L. -lenvironment
 
-#compiler: compiler.cpp
-#	$(CPP) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -pthread -ldl
-
-
-elisp: parse.cpp compiler.cpp libenvironment.so libcell.so
-	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ parse.cpp $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl
+llisp: src/parse.cpp src/compiler.cpp libenvironment.so libcell.so
+	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ src/parse.cpp $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl

@@ -111,4 +111,20 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
     }
   };
 
+  std::shared_ptr<Atom> length = SymbolAtom::New(env, "length");
+  std::dynamic_pointer_cast<SymbolAtom>(length)->prototype = Prototype("fu");
+  length->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Cell> arg  = sexp->cells[1]->eval(env);    
+    std::shared_ptr<Cell> res = RealAtom::New();
+    switch (arg->evalType(env)) {
+    case Cell::Type::String:
+      res->real = arg->eval(env)->val.size();
+      break;
+    case Cell::Type::List:
+      res->real = std::dynamic_pointer_cast<Sexp>(arg)->cells.size();
+    }
+    res->val = std::to_string(res->real);
+    return res;
+  };
+
 }

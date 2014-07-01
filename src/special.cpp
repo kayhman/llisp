@@ -40,6 +40,12 @@ double equal(std::shared_ptr<Cell> m1, std::shared_ptr<Cell> m2, Cell::CellEnv& 
 
 extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
 {
+  std::shared_ptr<Atom> ext = SymbolAtom::New(env, "exit");
+  ext->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    exit(0);
+    return RealAtom::New();
+  };
+
   std::shared_ptr<Atom> eq = SymbolAtom::New(env, "eq");
   eq->closureType = [](Sexp* sexp, Cell::CellEnv& env) { return Cell::Type::Real; };
   eq->closure = [](Sexp* sexp, Cell::CellEnv& env) {
