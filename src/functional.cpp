@@ -13,31 +13,31 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     if(args && body)
       {
 
-	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& callingEnv) mutable { //remove mutable by using env instead of currentEnv
-	  Cell::CellEnv& currentEnv = env;
-	  if(&currentEnv != &callingEnv)
+	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& callingEnv) mutable {
+	  if(&env != &callingEnv)
 	    for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; ++eIt)
 	      {
-		currentEnv.addEnvMap(*eIt);
+		env.addEnvMap(*eIt);
 	      }
 	  
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	  for(int c = 0 ; c < args->cells.size() ; c++)
 	    {
-	      std::shared_ptr<Cell> val = self->cells[c+1]->eval(currentEnv);
+	      std::shared_ptr<Cell> val = self->cells[c+1]->eval(env);
 	      std::shared_ptr<SymbolAtom> symb = std::dynamic_pointer_cast<SymbolAtom>(val);
-	      if(symb && currentEnv.find(symb->val) != currentEnv.end())
-		newEnv[args->cells[c]->val] = currentEnv[symb->val];
+	      if(symb && env.find(symb->val) != env.end())
+		newEnv[args->cells[c]->val] = env[symb->val];
 	      else
 		newEnv[args->cells[c]->val] = val; // Eval args before adding them to env (avoid infinite loop when defining recursive function)
 	    }
-	  currentEnv.addEnvMap(&newEnv);
-	  std::shared_ptr<Cell> res = body->eval(currentEnv);
+	  env.addEnvMap(&newEnv);
+	  std::shared_ptr<Cell> res = body->eval(env);
 	  
 	  //The following lines are useless :
-	  currentEnv.removeEnv();
-	  for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
-	    currentEnv.removeEnv();
+	  env.removeEnv();
+	  if(&env != &callingEnv)
+	    for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
+	      env.removeEnv();
 	  return res;
 	};
 
