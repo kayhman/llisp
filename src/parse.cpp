@@ -64,7 +64,7 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		 if(quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx = Sexp::New();
-		     std::shared_ptr<Atom> quote = SymbolAtom::New();
+		     std::shared_ptr<Atom> quote = SymbolAtom::New(env, quoting == Cell::Quote ? "quote" : "backquote");
 		     //quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
 		     
@@ -85,7 +85,7 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		 if(sexp->quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx = Sexp::New();
-		     std::shared_ptr<Atom> quote =SymbolAtom::New();
+		     std::shared_ptr<Atom> quote =SymbolAtom::New(env, sexp->quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : "backquote");
 
