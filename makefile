@@ -4,10 +4,18 @@ LLVM_CFLAGS=-I/usr/lib/llvm-3.5/include  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTAN
 LLVM_CFLAGS=`llvm-config-3.5 --cflags`
 LLVM_LIB=`llvm-config-3.5 --libs`
 LLVM_LINK=`llvm-config-3.5 --ldflags`
-
+TESTS=$(wildcard tests/*.cl)
 
 all: libenvironment.so libcell.so string.so list.so special.so core.so functional.so bench.so compiler.so llisp
-	
+
+test: $(TESTS)
+	make $^
+
+.PHONY: $(TESTS)
+$(TESTS):
+	./llisp $@ -q
+
+
 clean:
 	rm -rf *.so llisp
 

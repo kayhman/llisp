@@ -12,4 +12,4 @@
        (eq 17 (boubou 1 2))
        (eq 18 (boubou 1 2)))
   (print "lol succeed ;)"))
-
+(exit)

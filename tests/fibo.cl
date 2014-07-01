@@ -13,4 +13,4 @@
        (eq 13 resc)
        (eq res resc))
   (print "fibo succeed ;)"))
-
+(exit)
