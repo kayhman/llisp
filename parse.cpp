@@ -202,7 +202,7 @@ int main(int argc, char* argv[])
     {
       std::cout << (curLine.size() ? "     > " : "elisp> ");
       std::getline(std::cin, in);
-      if(std::cin.eof() || in.compare(":exit") == 0) {
+      if(std::cin.eof()) {
 	std::cout << "goobye" << std::endl;
 	break;
       }
