@@ -13,10 +13,11 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
      char ch;
      std::string buffer;
      Cell::Quoting quoting = Cell::NoneQ;
+     bool stringing = false;
      for(int cc = 0 ;  ; ++cc)
      {
           ss >> std::noskipws >> ch;
-          if(ch == '(' || ch == ' ' || ch == ')' || ch == '\n')
+          if(!stringing && (ch == '(' || ch == ' ' || ch == ')' || ch == '\n'))
           {
                if(ch == '(')
                {
@@ -113,14 +114,21 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
                newToken = false;
           }
       
-          if(isalnum(ch) || isoperator(ch) || isquote(ch) || ch == '.')
-          {
-            if(ch == '\'')
-	      quoting = Cell::Quote;
-	    else if(ch == '`')
-              quoting = Cell::BackQuote;
-            else
-	      buffer.push_back(ch);
+          if(isalnum(ch) || isoperator(ch) || isquote(ch) || ch == '.'
+             || (ch == ' ' && stringing))
+            {
+              if(ch == '\'')
+                quoting = Cell::Quote;
+              else if(ch == '`')
+                quoting = Cell::BackQuote;
+              else if(ch == '"') {
+                buffer.push_back(ch);
+                stringing = !stringing;
+              }
+              else if(ch == ' ' && stringing)
+                buffer.push_back(ch);
+              else
+                buffer.push_back(ch);
           }
 
           if((sexps.size() == 0 && sexp != NULL) 
