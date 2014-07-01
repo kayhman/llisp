@@ -196,37 +196,29 @@ Cell::Type SymbolAtom::evalType(CellEnv& env)
 
 std::shared_ptr<Sexp> Sexp::New()
 {
-  std::shared_ptr<Sexp> sexp(new Sexp);// = pool.back();
-  //pool.pop_back();
+  std::shared_ptr<Sexp> sexp(new Sexp);
   sexp->evaluated = sexp;
-  //gc.push_back(sexp);
   return sexp;
 }
 
 std::shared_ptr<RealAtom> RealAtom::New()
 {
-  std::shared_ptr<RealAtom> atom(new RealAtom);// = pool.back();
-  //  pool.pop_back();
+  std::shared_ptr<RealAtom> atom(new RealAtom);
   atom->evaluated = atom;
-  //  gc.push_back(atom);
   return atom;
 }
 
 std::shared_ptr<StringAtom> StringAtom::New()
 {
-  std::shared_ptr<StringAtom> atom(new StringAtom);// = pool.back();
-  //pool.pop_back();
+  std::shared_ptr<StringAtom> atom(new StringAtom);
   atom->evaluated = atom;
-  //gc.push_back(atom);
   return atom;
 }
 
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
-  std::shared_ptr<SymbolAtom> atom(new SymbolAtom);// = pool.back();
-  //  pool.pop_back();
+  std::shared_ptr<SymbolAtom> atom(new SymbolAtom);
   atom->evaluated = atom;
-  //  gc.push_back(atom);
   return atom;
 }
 
@@ -239,11 +231,9 @@ std::shared_ptr<Atom> SymbolAtom::New(Cell::CellEnv& env, const std::string& nam
     }
   else
     {
-      std::shared_ptr<SymbolAtom> atom(new SymbolAtom);// = pool.back();
+      std::shared_ptr<SymbolAtom> atom(new SymbolAtom);
       env.func[name] = atom;
-      //  pool.pop_back();
       atom->evaluated = atom;
-      //  gc.push_back(atom);
       return atom;
     }
 }
@@ -391,38 +381,3 @@ Cell::Type Sexp::evalType(CellEnv& env)
   }
   return Cell::Type::List;
 }
-
-void Sexp::initGC()
-{
-  for(int i = 0 ; i < 1024*100 ; i++)
-    pool.push_back(std::shared_ptr<Sexp>(new Sexp()));
-}
-
-void RealAtom::initGC()
-{
-  for(int i = 0 ; i < 1024*100 ; i++)
-    pool.push_back(std::shared_ptr<RealAtom>(new RealAtom()));
-}
-
-void StringAtom::initGC()
-{
-  for(int i = 0 ; i < 1024*100 ; i++)
-    pool.push_back(std::shared_ptr<StringAtom>(new StringAtom()));
-}
-
-void SymbolAtom::initGC()
-{
-  for(int i = 0 ; i < 1024*10 ; i++)
-    pool.push_back(std::shared_ptr<SymbolAtom>(new SymbolAtom()));
-}
-
-std::list<std::shared_ptr<Sexp> > Sexp::gc;
-std::list<std::shared_ptr<RealAtom> > RealAtom::gc;
-std::list<std::shared_ptr<StringAtom> > StringAtom::gc;
-std::list<std::shared_ptr<SymbolAtom> > SymbolAtom::gc;
-
-std::list<std::shared_ptr<Sexp> > Sexp::pool;
-std::list<std::shared_ptr<RealAtom> > RealAtom::pool;
-std::list<std::shared_ptr<StringAtom> > StringAtom::pool;
-std::list<std::shared_ptr<SymbolAtom> > SymbolAtom::pool;
-

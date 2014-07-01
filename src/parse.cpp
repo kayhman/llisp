@@ -177,11 +177,6 @@ int main(int argc, char* argv[])
   std::string in;
   std::string curLine;
 
-  Sexp::initGC();
-  RealAtom::initGC();
-  StringAtom::initGC();
-  SymbolAtom::initGC();
-
   std::stringstream special("(load \"./special.so\" \"registerSpecialHandlers\")");
   evalHelper(special, env, false);
   std::stringstream core("(load \"./core.so\" \"registerCoreHandlers\")");

@@ -93,9 +93,6 @@ struct RealAtom : public Atom
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const RealAtom& cell);
   static std::shared_ptr<RealAtom> New();
-  static std::list<std::shared_ptr<RealAtom> > gc;
-  static std::list<std::shared_ptr<RealAtom> > pool;
-  static void initGC();
  protected:
   RealAtom() {};
 };
@@ -108,9 +105,6 @@ struct StringAtom : public Atom
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const StringAtom& cell);
   static std::shared_ptr<StringAtom> New();
-  static std::list<std::shared_ptr<StringAtom> > gc;
-  static std::list<std::shared_ptr<StringAtom> > pool;
-  static void initGC();
  protected:
   StringAtom() {};
 };
@@ -126,9 +120,6 @@ struct SymbolAtom : public Atom
   friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);
   static std::shared_ptr<SymbolAtom> New(); 
   static std::shared_ptr<Atom> New(Cell::CellEnv& env, const std::string& name); 
-  static std::list<std::shared_ptr<SymbolAtom> > gc;
-  static std::list<std::shared_ptr<SymbolAtom> > pool;
-  static void initGC();
  protected:
  SymbolAtom() {
    this->closureType = [this](Sexp* sexp, Cell::CellEnv& env) { return this->prototype.returnType(); };
