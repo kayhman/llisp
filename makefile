@@ -6,10 +6,10 @@ LLVM_LIB=`llvm-config-3.5 --libs`
 LLVM_LINK=`llvm-config-3.5 --ldflags`
 
 
-all: libenvironment.so libcell.so string.so list.so special.so core.so functional.so bench.so compiler.so elisp
+all: libenvironment.so libcell.so string.so list.so special.so core.so functional.so bench.so compiler.so llisp
 	
 clean:
-	rm -rf *.so elisp
+	rm -rf *.so llisp
 
 libenvironment.so: src/environment.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
@@ -38,5 +38,5 @@ bench.so: src/bench.cpp
 compiler.so: src/compiler.cpp
 	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl -lffi -L. -lenvironment
 
-elisp: src/parse.cpp src/compiler.cpp libenvironment.so libcell.so
+llisp: src/parse.cpp src/compiler.cpp libenvironment.so libcell.so
 	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ src/parse.cpp $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl
