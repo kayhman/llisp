@@ -67,6 +67,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
         
     std::shared_ptr<Cell> res = SymbolAtom::New();
     res->val = "lambda closure";
+    res->real = 1;
     res->closure = sexp->closure;
     
     return res;

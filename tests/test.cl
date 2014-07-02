@@ -1,0 +1,35 @@
+(defun mymy (a b) 
+	 (progn 
+	   (* a b)))
+
+(when (and 
+       (eq (+ 1 2 3) 6)	
+       (eq (- 1 2 3) -4) 	
+       (eq (* 1 2 3) 6)	
+       (eq (/ 6 2 3) 1)
+       (setq lapin 0.666)
+       (eq (- lapin 0.666) 0.)
+       (eq "baba" (concat "ba" "ba"))
+       (setq ba "bi")
+       (eq "biba" (concat ba "ba"))
+       (eq "bibou" (concat ba "bou"))
+       (setq ba "bou")
+       (eq "boubou" (concat ba "bou"))
+       (+ 1 3)
+       lapin
+       (eq lapin 0.666)
+       (eq 1.332 (mymy lapin 2))
+       (eq (* lapin lapin) (mymy lapin lapin))
+       (eq (* 0.666 0.666) (mymy lapin lapin))
+       (setq lapin 0.777)
+       (eq (* 0.777 lapin) (mymy lapin lapin))
+       (eq 2 (setq lapin (mymy 1 2)))
+       (eq 2 lapin)
+       (setq lapin (lambda (a b) (+ a b)))
+       (eq 3 (funcall lapin 1 2))
+       (eq 7 (funcall (lambda (a b) (+ a b)) 3 4))
+       )
+  (print "various tests succeed"))
+(exit)
+
+
