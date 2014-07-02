@@ -144,7 +144,7 @@ bool evalHelper(std::istream& ss, Cell::CellEnv& env, bool verbose = true)
 	    fun->inferFunctionType(env);
 	  std::shared_ptr<Cell> res = sexp->eval(env);
 	  if(verbose) {
-	    std::cout << "> " << *sexp << std::endl;
+	    //std::cout << "> " << *sexp << std::endl;
 	    std::cout << "-> " << *res << std::endl;
 	  }
         }
