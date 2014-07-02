@@ -229,10 +229,8 @@ llvm::Value* codegen(const Sexp& sexp, llvm::LLVMContext& context,
 
       ArgsV.push_back(stringVar);
       
-      std::cout << "call interpreted " << symbol->val << " " << sexp << std::endl;
       //add var args
       for (unsigned i = 1; i < sexp.cells.size(); ++i) {
-        std::cout << "call arg " << *sexp.cells[i] << std::endl;
 	ArgsV.push_back(codegen(*sexp.cells[i], context, builder, module));
       }
       ss.str("");
@@ -268,8 +266,6 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
   const StringAtom* string = dynamic_cast<const StringAtom*>(&cell);
   const Sexp* sexp = dynamic_cast<const Sexp*>(&cell);
  
-  std::cout << "s " << symb << " r " << real << " S " << string << " sx " << sexp << std::endl; 
-
   if(symb)
     return codegen(*symb, context, builder, module);
   if(real)
@@ -284,7 +280,6 @@ llvm::Value* codegen(const Cell& cell, llvm::LLVMContext& context,
 
 llvm::Function* compileBody(const std::string& name, const Sexp& body, const std::vector<const Cell*> args, llvm::Module *module)
 {
-  std::cout << "compiled body " << std::endl;
   NamedValues.clear();
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
@@ -356,7 +351,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 
   
   std::shared_ptr<Atom> compile = SymbolAtom::New(env, "compile");
-  compile->closure = [module](Sexp* sexp, Cell::CellEnv& env) mutable {
+  compile->closure = [module](Sexp* sexp, Cell::CellEnv& env) {
     const std::string& fname = sexp->cells[1]->val;
     auto clIt = env.func.find(fname);
     if(clIt != env.func.end())

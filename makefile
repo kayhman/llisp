@@ -13,7 +13,7 @@ test: $(TESTS)
 
 .PHONY: $(TESTS)
 $(TESTS):
-	./llisp $@ -q
+	@./llisp $@ -q
 
 
 clean:

@@ -67,7 +67,6 @@ struct Sexp : public Cell
   static std::shared_ptr<Sexp> New();
   static std::list<std::shared_ptr<Sexp> > gc;
   static std::list<std::shared_ptr<Sexp> > pool;
-  static void initGC();
 };
 
 
