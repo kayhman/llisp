@@ -39,19 +39,9 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
                if(buffer.size())
                {
                  Atom::Type type = Atom::computeType(buffer);
-                 std::shared_ptr<Atom> at;;
+                 std::shared_ptr<Atom> at;
                  if(type == Atom::Symbol)
-		   {
-		     if(sexp)
-		       {
-			 if(sexp->cells.size() == 0 && quoting == Cell::NoneQ)
-			    at = SymbolAtom::New(env, buffer);
-			 else
-			   at = SymbolAtom::New(env, buffer);
-		       }
-		     else
-		       at = SymbolAtom::New(env, buffer);
-		   }
+		   at = SymbolAtom::New(env, buffer);
 		 if(type == Atom::String)
                    at = StringAtom::New();
                  if(type == Atom::Real)
@@ -149,7 +139,9 @@ bool evalHelper(std::istream& ss, Cell::CellEnv& env, bool verbose = true)
     {
       if(sexp->checkSyntax(env))
         {
-          dynamic_cast<Sexp*>(sexp.get())->inferFunctionType(env);
+	  std::shared_ptr<Sexp> fun = std::dynamic_pointer_cast<Sexp>(sexp);
+	  if(fun)
+	    fun->inferFunctionType(env);
 	  std::shared_ptr<Cell> res = sexp->eval(env);
 	  if(verbose) {
 	    std::cout << "> " << *sexp << std::endl;
