@@ -4,6 +4,12 @@
 
 extern "C" void registerCoreHandlers(Cell::CellEnv& env)
 {
+  std::shared_ptr<Atom> t = SymbolAtom::New(env, "t");
+  t->real = 1.;
+
+  std::shared_ptr<Atom> nil = SymbolAtom::New(env, "nil");
+  nil->real = 0.;
+
   std::shared_ptr<Atom> print = SymbolAtom::New(env, "print");
   print->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::for_each(sexp->cells.begin()+1, sexp->cells.end(), [&](std::shared_ptr<Cell> cell){std::cout << *cell->eval(env) << " ";});
