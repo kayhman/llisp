@@ -15,6 +15,8 @@ Prototype::Prototype() :
   
 }
 
+std::shared_ptr<Cell> Cell::t;
+std::shared_ptr<Cell> Cell::nil;
 
 const Cell::Type Prototype::convert(const char c)
 {

@@ -36,6 +36,9 @@ Cell() :quoting(NoneQ), compiled(false) {};
   virtual Type evalType(CellEnv& env) = 0;
   bool checkSyntax(CellEnv& env) const;
 
+  static std::shared_ptr<Cell> nil;
+  static std::shared_ptr<Cell> t;
+
   friend std::ostream& operator<< (std::ostream& stream, const Cell& cell);
   friend std::ostream& operator>> (std::istream& stream, Cell& cell);
 };

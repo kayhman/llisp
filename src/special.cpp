@@ -52,9 +52,11 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
     std::shared_ptr<Cell> m1 = sexp->cells[1]->eval(env);
     std::shared_ptr<Cell> m2 = sexp->cells[2]->eval(env);
     
-    std::shared_ptr<Cell> res = RealAtom::New();
-    res->real = equal(m1, m2, env);
-    res->val = std::to_string(res->real);
+    std::shared_ptr<Cell> res;
+    if(equal(m1, m2, env))
+      res = Cell::t;
+    else
+      res = Cell::nil;
 
     return res;
   };
@@ -86,6 +88,36 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
   };
 
 
+  std::shared_ptr<Atom> cond = SymbolAtom::New(env, "cond");
+  cond->closureType = [](Sexp* sexp, Cell::CellEnv& env) { 
+    std::shared_ptr<Cell> test = sexp->cells[1];
+    std::shared_ptr<Cell> True = sexp->cells[2];
+    std::shared_ptr<Cell> False = sexp->cells[3];
+
+    Cell::Type trueType = True->evalType(env);
+    Cell::Type falseType = False->evalType(env);
+    
+    if(trueType == falseType)
+      return trueType;
+    else        
+      return Cell::Type::Unknown; //TODO : add error message.
+  };
+
+  cond->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    for(auto condIt = sexp->cells.begin() + 1 ; condIt != sexp->cells.end() ; condIt++)
+      {
+        std::shared_ptr<Sexp> cond = std::dynamic_pointer_cast<Sexp>(*condIt);
+        std::shared_ptr<Cell> test = cond->cells[0];
+        if(test->eval(env)->real) {
+          std::shared_ptr<Cell> res;
+          for(auto codeIt = cond->cells.begin() + 1 ; codeIt != cond->cells.end() ; codeIt++)
+            res = (*codeIt)->eval(env);
+          return res;
+        }
+      }
+    return Cell::nil;
+  };
+
   std::shared_ptr<Atom> when = SymbolAtom::New(env, "when");
   when->closureType = [](Sexp* sexp, Cell::CellEnv& env) { 
     std::shared_ptr<Cell> test = sexp->cells[1];
@@ -101,11 +133,8 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
     
     if(test->eval(env)->real)
       return True->eval(env);
-    else {
-      std::shared_ptr<Cell> res = RealAtom::New();
-      res->real = 0.;
-      return res;
-    }
+    else 
+      return Cell::nil;
   };
 
   std::shared_ptr<Atom> quote = SymbolAtom::New(env, "quote");

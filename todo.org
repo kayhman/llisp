@@ -15,6 +15,7 @@
 ** DONE Ajouter when pour les tests
 ** DONE Fixer bug parsing string avec espace : "lapin pierre"
 ** TODO Ajouter historique de commandes dans la console llisp
+** TODO Am�liorer gestion symbols
 * [Compilation]
 ** TODO Créér une fonction llvm pour chaque fonction standard
 *** TODO but -> permettre l'appel de fonctions interprétées depuis des fonctions compilées.
