@@ -6,9 +6,11 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
 {
   Cell::t = SymbolAtom::New(env, "t");
   Cell::t->real = 1.;
+  Cell::t->val = "t";
   
   Cell::nil = SymbolAtom::New(env, "nil");
   Cell::nil->real = 0.;
+  Cell::nil->val = "nil";
 
   std::shared_ptr<Atom> print = SymbolAtom::New(env, "print");
   print->closure = [](Sexp* sexp, Cell::CellEnv& env) {
@@ -105,15 +107,18 @@ extern "C" void registerCoreHandlers(Cell::CellEnv& env)
     std::shared_ptr<Cell> m1 = sexp->cells[1]->eval(env);
 
     std::shared_ptr<Cell> res = RealAtom::New();
-    if(m1->evalType(env) == Cell::Type::Real) {
-      if(m1->real == 0.) {
-        res->real = 1.0 ;
-        return res;
-      }
-    }
-    else {
-      res->real = 0.;
-      return res;
+    if(m1.get() == Cell::nil.get())
+      return Cell::t;
+
+    switch(m1->evalType(env)) {
+    case Cell::Type::Real:
+      if(m1->real == 0.)
+        return Cell::t;
+      else
+        return Cell::nil;
+      break;
+    default:
+      return Cell::nil;
     }
   };
 
