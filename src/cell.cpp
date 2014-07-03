@@ -15,6 +15,9 @@ Prototype::Prototype() :
   
 }
 
+std::shared_ptr<Cell> Cell::t = SymbolAtom::New();
+std::shared_ptr<Cell> Cell::nil = SymbolAtom::New();
+
 
 const Cell::Type Prototype::convert(const char c)
 {

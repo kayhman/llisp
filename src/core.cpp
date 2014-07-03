@@ -4,11 +4,11 @@
 
 extern "C" void registerCoreHandlers(Cell::CellEnv& env)
 {
-  std::shared_ptr<Atom> t = SymbolAtom::New(env, "t");
-  t->real = 1.;
-
-  std::shared_ptr<Atom> nil = SymbolAtom::New(env, "nil");
-  nil->real = 0.;
+  Cell::t = SymbolAtom::New(env, "t");
+  Cell::t->real = 1.;
+  
+  Cell::nil = SymbolAtom::New(env, "nil");
+  Cell::nil->real = 0.;
 
   std::shared_ptr<Atom> print = SymbolAtom::New(env, "print");
   print->closure = [](Sexp* sexp, Cell::CellEnv& env) {
