@@ -207,7 +207,7 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
   std::shared_ptr<Atom> let = SymbolAtom::New(env, "let");
   let->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Sexp> vars = std::dynamic_pointer_cast<Sexp>(sexp->cells[1]);
-    std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]);
+
     
     std::map<std::string, std::shared_ptr<Cell> >* newEnv = new std::map<std::string, std::shared_ptr<Cell> >();
     for(int vId = 0 ; vId < vars->cells.size() ; vId++) {
@@ -222,8 +222,14 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
     }
     
     env.addEnvMap(newEnv);
-    std::shared_ptr<Cell> res = body->eval(env);
+    std::shared_ptr<Cell> res;
+    for(auto bodyIt = sexp->cells.begin() + 2 ; bodyIt != sexp->cells.end() ; bodyIt++) {
+      res = (*bodyIt)->eval(env);
+    }
     env.removeEnv();
-    return res;
+    if (res)
+      return res;
+    else
+      return Cell::nil;
   };
 }
