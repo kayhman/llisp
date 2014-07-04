@@ -13,7 +13,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     if(args && body)
       {
 
-	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& callingEnv) mutable {
+	fname->closure = [env, args, body](Sexp* self, Cell::CellEnv& callingEnv) mutable {
 	  if(&env != &callingEnv)
 	    for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; ++eIt)
 	      {
@@ -51,33 +51,53 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     std::shared_ptr<Atom> lambda = std::dynamic_pointer_cast<Atom>(sexp->cells[0]);
     std::shared_ptr<Sexp> args =  std::dynamic_pointer_cast<Sexp>(sexp->cells[1]);
     std::shared_ptr<Sexp> body =  std::dynamic_pointer_cast<Sexp>(sexp->cells[2]);
-    
+    std::shared_ptr<Cell> res = SymbolAtom::New();
+
     if(args && body) {
-      sexp->closure = [env,body, args](Sexp* self, Cell::CellEnv& dummy) mutable {
-	std::map<std::string, std::shared_ptr<Cell> > newEnv;
-	for(int c = 0 ; c < args->cells.size() ; c++)
-	  newEnv[args->cells[c]->val] = self->cells[c+2];
-	
-	env.addEnvMap(&newEnv);
-	std::shared_ptr<Cell> res = body->eval(env);
-	env.removeEnv();
-	return res;
-      };
+      res->closure = [env, args, body](Sexp* self, Cell::CellEnv& callingEnv) mutable {
+        if(&env != &callingEnv)
+          for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; ++eIt)
+	      {
+		env.addEnvMap(*eIt);
+	      }
+	  
+	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
+	  for(int c = 0 ; c < args->cells.size() ; c++)
+	    {
+	      std::shared_ptr<Cell> val = self->cells[c+1]->eval(env);
+	      std::shared_ptr<SymbolAtom> symb = std::dynamic_pointer_cast<SymbolAtom>(val);
+	      if(symb && env.find(symb->val) != env.end())
+		newEnv[args->cells[c]->val] = env[symb->val];
+	      else
+		newEnv[args->cells[c]->val] = val; // Eval args before adding them to env (avoid infinite loop when defining recursive function)
+	    }
+	  env.addEnvMap(&newEnv);
+	  std::shared_ptr<Cell> res = body->eval(env);
+	  
+	  //The following lines are useless :
+	  env.removeEnv();
+	  if(&env != &callingEnv)
+	    for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
+	      env.removeEnv();
+	  return res;
+	};
     }
         
-    std::shared_ptr<Cell> res = SymbolAtom::New();
+    
     res->val = "lambda closure";
     res->real = 1;
-    res->closure = sexp->closure;
     
     return res;
   };
 
   std::shared_ptr<Atom> funcall = SymbolAtom::New(env, "funcall");
-  funcall->closure = [](Sexp* sexp, Cell::CellEnv& env)   {
-    std::shared_ptr<Cell> lambda =  std::dynamic_pointer_cast<Cell>(sexp->cells[1])->eval(env);
-    
-    return  lambda->closure(sexp, env);
+  funcall->closure = [](Sexp* sexp, Cell::CellEnv& env)  {
+    std::shared_ptr<Cell> lambda = std::dynamic_pointer_cast<Cell>(sexp->cells[1])->eval(env);
+    std::shared_ptr<Sexp> args = Sexp::New();
+    for(auto aIt = sexp->cells.begin()+1 ; aIt != sexp->cells.end() ; aIt++)
+      args->cells.push_back(*aIt);
+
+    return lambda->closure(args.get(), env);
   };
 
   std::shared_ptr<Atom> defmacro = SymbolAtom::New(env, "defmacro");
