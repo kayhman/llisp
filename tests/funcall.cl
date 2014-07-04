@@ -1,5 +1,19 @@
 (setq rabbit (defun lapin (a b c) (+ a b c)))
-(setq roger (lambda (u v) (* u v)))
+(let ((offset 5))  (print offset))
+(let ((offset 5)) 
+  (progn 
+    (setq roger (lambda (u v) (+ offset (* u v)))) 
+    (printenv)
+    (funcall roger 1 2)))
+(printenv)
+(funcall roger 1 2)
+(exit)
+(let ((offset 5))
+  (setq roger (lambda (u v) 
+		(+ 3 (* u v))))
+  (print "hop")
+  (print roger)
+  (funcall roger 5 6))
 
 (when 
 	(and
