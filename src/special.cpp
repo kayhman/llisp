@@ -198,8 +198,9 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
       }
     else
       {
-	env[sexp->cells[1]->val] = res;
+	env.top[sexp->cells[1]->val] = res;
       }
+
     return res;
   };
 
