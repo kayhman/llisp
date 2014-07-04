@@ -128,13 +128,23 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
   };
 
   when->closure = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Cell> test = sexp->cells[1];
-    std::shared_ptr<Cell> True = sexp->cells[2];
-    
-    if(test->eval(env)->real)
-      return True->eval(env);
-    else 
-      return Cell::nil;
+    if(sexp->cells.size() == 3) {
+      std::shared_ptr<Cell> test = sexp->cells[1];
+      std::shared_ptr<Cell> True = sexp->cells[2];
+      
+      if(test->eval(env)->real)
+	return True->eval(env);
+      else 
+	return Cell::nil;
+    }
+    else {
+      std::shared_ptr<Cell> test = sexp->cells[1];
+      if(test->eval(env)->real)
+	return Cell::t;
+      else 
+	return Cell::nil;
+    }
+
   };
 
   std::shared_ptr<Atom> quote = SymbolAtom::New(env, "quote");
@@ -207,17 +217,16 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
   std::shared_ptr<Atom> let = SymbolAtom::New(env, "let");
   let->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Sexp> vars = std::dynamic_pointer_cast<Sexp>(sexp->cells[1]);
-
     
     std::map<std::string, std::shared_ptr<Cell> >* newEnv = new std::map<std::string, std::shared_ptr<Cell> >();
     for(int vId = 0 ; vId < vars->cells.size() ; vId++) {
       std::shared_ptr<Sexp> binding = std::dynamic_pointer_cast<Sexp>(vars->cells[vId]);
       std::shared_ptr<Atom> label = std::dynamic_pointer_cast<Atom>(binding->cells[0]);
-      std::shared_ptr<Atom> value = std::dynamic_pointer_cast<Atom>(binding->cells[1]);
+      std::shared_ptr<Cell> value = std::dynamic_pointer_cast<Cell>(binding->cells[1]);
       
-      (*newEnv)[label->val].reset();//(new Atom);
+      (*newEnv)[label->val].reset();
       
-      const std::shared_ptr<Cell> res =  value->eval(env);
+      const std::shared_ptr<Cell> res = value->eval(env);
       (*newEnv)[label->val] = res;
     }
     
