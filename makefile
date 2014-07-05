@@ -9,7 +9,6 @@ TESTS=$(wildcard tests/*.cl)
 all: libenvironment.so libcell.so string.so list.so special.so core.so functional.so bench.so compiler.so llisp
 
 test: $(TESTS)
-	make $^
 
 .PHONY: $(TESTS)
 $(TESTS):
