@@ -14,7 +14,7 @@ public:
   static std::map<Key, std::function<Val(Sexp* sexp, Env& env)> > evalHandlers;
   //private:
   std::vector<std::map<Key,Val>* > envs;
- private:
+
   static std::map<Key,Val> top;
 public:
   Val& operator[] (const Key& k);
