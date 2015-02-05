@@ -12,6 +12,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <string>
+
 
 #define BUFSIZE 1024
 
@@ -55,34 +57,13 @@ void error(char *msg) {
   exit(1);
 }
 
-int main(int argc, char **argv) {
-  int parentfd; /* parent socket */
-  int childfd; /* child socket */
-  int portno; /* port to listen on */
-  int clientlen; /* byte size of client's address */
-  struct sockaddr_in serveraddr; /* server's addr */
-  struct sockaddr_in clientaddr; /* client addr */
-  struct hostent *hostp; /* client host info */
-  char buf[BUFSIZE]; /* message buffer */
-  char *hostaddrp; /* dotted decimal host addr string */
+
+int lsocket(const std::string& domain, const std::string& type, const std::string& protocol)
+{
+  const int parentfd = socket(AF_INET, SOCK_STREAM, 0);
   int optval; /* flag value for setsockopt */
-  int n; /* message byte size */
-
-  /* 
-   * check command line arguments 
-   */
-  if (argc != 2) {
-    fprintf(stderr, "usage: %s <port>\n", argv[0]);
-    exit(1);
-  }
-  portno = atoi(argv[1]);
-
-  /* 
-   * socket: create the parent socket 
-   */
-  parentfd = socket(AF_INET, SOCK_STREAM, 0);
   if (parentfd < 0) 
-    error("ERROR opening socket");
+    error((char*)"ERROR opening socket");
 
   /* setsockopt: Handy debugging trick that lets 
    * us rerun the server immediately after we kill it; 
@@ -93,6 +74,12 @@ int main(int argc, char **argv) {
   setsockopt(parentfd, SOL_SOCKET, SO_REUSEADDR, 
 	     (const void *)&optval , sizeof(int));
 
+  return parentfd;
+}
+
+int lbind(const int parentfd,  const int portno)
+{
+  struct sockaddr_in serveraddr; /* server's addr */
   /*
    * build the server's Internet address
    */
@@ -110,16 +97,66 @@ int main(int argc, char **argv) {
   /* 
    * bind: associate the parent socket with a port 
    */
-  if (bind(parentfd, (struct sockaddr *) &serveraddr, 
-	   sizeof(serveraddr)) < 0) 
-    error("ERROR on binding");
+  if (bind(parentfd, (struct sockaddr *) &serveraddr,
+	   sizeof(serveraddr)) < 0)
+    error((char*)"ERROR on binding");
 
-  /* 
+  return 0;
+}
+
+int llisten(const int parentfd, const int queueSize)
+{
+   /* 
    * listen: make this socket ready to accept connection requests 
    */
-  if (listen(parentfd, 5) < 0) /* allow 5 requests to queue up */ 
-    error("ERROR on listen");
+  if (listen(parentfd, queueSize) < 0) /* allow 5 requests to queue up */ 
+    error((char*)"ERROR on listen");
 
+  return 0;
+}
+
+int laccept(const int parentfd, struct sockaddr* clientaddr,  const int clientlen)
+{
+    /* 
+     * accept: wait for a connection request 
+     */
+    int childfd = accept(parentfd, clientaddr, (socklen_t*)&clientlen);
+    if (childfd < 0) 
+      error((char*)"ERROR on accept");
+
+    return childfd;
+}
+
+
+int main(int argc, char **argv) {
+  int parentfd; /* parent socket */
+  int childfd; /* child socket */
+  int clientlen; /* byte size of client's address */
+  int portno;
+  struct sockaddr_in clientaddr; /* client addr */
+  struct hostent *hostp; /* client host info */
+  char buf[BUFSIZE]; /* message buffer */
+  char *hostaddrp; /* dotted decimal host addr string */
+  int n; /* message byte size */
+
+  /* 
+   * check command line arguments 
+   */
+  if (argc != 2) {
+    fprintf(stderr, "usage: %s <port>\n", argv[0]);
+    exit(1);
+  }
+  portno = atoi(argv[1]);
+
+  /* 
+   * socket: create the parent socket 
+   */
+  parentfd = lsocket("AF_INET", "SOCK_STREAM", "0");
+
+  lbind(parentfd, portno);
+
+  llisten(parentfd, 5);
+ 
   /* 
    * main loop: wait for a connection request, echo input line, 
    * then close connection.
@@ -127,12 +164,7 @@ int main(int argc, char **argv) {
   clientlen = sizeof(clientaddr);
   while (1) {
 
-    /* 
-     * accept: wait for a connection request 
-     */
-    childfd = accept(parentfd, (struct sockaddr *) &clientaddr, &clientlen);
-    if (childfd < 0) 
-      error("ERROR on accept");
+    childfd = laccept(parentfd, (struct sockaddr*)&clientaddr, clientlen);
     
     /* 
      * gethostbyaddr: determine who sent the message 
@@ -140,10 +172,10 @@ int main(int argc, char **argv) {
     hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr, 
 			  sizeof(clientaddr.sin_addr.s_addr), AF_INET);
     if (hostp == NULL)
-      error("ERROR on gethostbyaddr");
+      error((char*)"ERROR on gethostbyaddr");
     hostaddrp = inet_ntoa(clientaddr.sin_addr);
     if (hostaddrp == NULL)
-      error("ERROR on inet_ntoa\n");
+      error((char*)"ERROR on inet_ntoa\n");
     printf("server established connection with %s (%s)\n", 
 	   hostp->h_name, hostaddrp);
     
@@ -153,7 +185,7 @@ int main(int argc, char **argv) {
     bzero(buf, BUFSIZE);
     n = read(childfd, buf, BUFSIZE);
     if (n < 0) 
-      error("ERROR reading from socket");
+      error((char*)"ERROR reading from socket");
     printf("server received %d bytes: %s", n, buf);
     
     /* 
@@ -161,7 +193,7 @@ int main(int argc, char **argv) {
      */
     n = write(childfd, buf, strlen(buf));
     if (n < 0) 
-      error("ERROR writing to socket");
+      error((char*)"ERROR writing to socket");
 
     close(childfd);
   }
