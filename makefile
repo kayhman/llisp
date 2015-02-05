@@ -1,12 +1,12 @@
 CPP=g++
-CFLAGS=-std=c++11 -ldl -O3
+CFLAGS=-g -std=c++11 -ldl -O3
 LLVM_CFLAGS=-I/usr/lib/llvm-3.5/include  -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -O3 -fomit-frame-pointer -fvisibility-inlines-hidden -fno-exceptions -fPIC -Woverloaded-virtual -ffunction-sections -fdata-sections -Wcast-qual
 LLVM_CFLAGS=`llvm-config-3.5 --cflags`
 LLVM_LIB=`llvm-config-3.5 --libs`
 LLVM_LINK=`llvm-config-3.5 --ldflags`
 TESTS=$(wildcard tests/*.cl)
 
-all: libenvironment.so libcell.so string.so list.so special.so core.so functional.so bench.so compiler.so llisp
+all: libenvironment.so libcell.so string.so list.so special.so core.so native.so functional.so bench.so compiler.so llisp
 
 test: $(TESTS)
 
@@ -31,6 +31,9 @@ list.so: src/list.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
 core.so: src/core.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
+
+native.so: src/native.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
 special.so: src/special.cpp

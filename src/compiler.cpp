@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include "cell.h"
+#include <dlfcn.h>
 
 using namespace llvm;
 
@@ -60,7 +61,8 @@ llvm::Value* codegen(const RealAtom& atom, llvm::LLVMContext& context, llvm::IRB
 
 llvm::Value* codegen(const StringAtom& atom, llvm::LLVMContext& context, llvm::IRBuilder<>& builder, llvm::Module *module)
 {
-  return ConstantDataArray::getString(context, atom.val);
+  return builder.CreateGlobalString(atom.val);
+//  return ConstantDataArray::getString(context, atom.val);
 }
 
 llvm::Value* codegen(const SymbolAtom& atom, llvm::LLVMContext& context, llvm::IRBuilder<>& builder,llvm::Module *module)
@@ -312,8 +314,11 @@ llvm::Function* compileBody(const std::string& name, const Sexp& body, const std
   return compiledF;
 }
 
+llvm::Function* createCaller(const std::string& name, Function* compiledF, const std::vector<std::shared_ptr<Cell> > args, llvm::Module *module, 
+                             std::vector<Value*> ArgsV = std::vector<Value*>());
 
-llvm::Function* createCaller(const std::string& name, Function* compiledF, const std::vector<std::shared_ptr<Cell> > args, llvm::Module *module)
+llvm::Function* createCaller(const std::string& name, Function* compiledF, const std::vector<std::shared_ptr<Cell> > args, llvm::Module *module, 
+                             std::vector<Value*> ArgsV)
 {
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
@@ -328,14 +333,81 @@ llvm::Function* createCaller(const std::string& name, Function* compiledF, const
   BasicBlock *BB = BasicBlock::Create(getGlobalContext(), "entry", execF);
   builder.SetInsertPoint(BB);
 
-  std::vector<Value*> ArgsV;
-  for (unsigned i = 0; i < args.size(); ++i) {
-    ArgsV.push_back(codegen(*args[i], context, builder, module));
+  if(ArgsV.size() == 0)  {
+    for (unsigned i = 0; i < args.size(); ++i) {
+      ArgsV.push_back(codegen(*args[i], context, builder, module));
+    }
   }
+  std::cout << "argv size " << ArgsV.size() << " " << ArgsV[0] << std::endl;
   builder.CreateRet(builder.CreateCall(compiledF, ArgsV, "calltmp"));
   return execF;
 }
 
+//typedef void* (*arbitrary)();
+
+void* externalCall(llvm::Module* module, const std::string& lib, const std::string& fun, std::vector<std::shared_ptr<Cell> >& args, Cell::CellEnv& env)
+{
+  llvm::LLVMContext& context = llvm::getGlobalContext();
+  llvm::IRBuilder<> builder(context);
+
+  void* handle = dlopen(lib.c_str(), RTLD_LAZY);
+  //arbitrary handler;
+
+  if (!handle) {
+    std::cout << "Cannot open library: " << dlerror() << '\n';
+    return NULL;
+  }
+  
+  // load the symbol
+  typedef void (*hello_t)(void);
+  
+  // reset errors
+  dlerror();
+  void* handler  = (void*)dlsym(handle, fun.c_str());
+  hello_t handler2  = (hello_t)dlsym(handle, fun.c_str());
+  const char *dlsym_error = dlerror();
+  if (dlsym_error) {
+    std::cout << "Cannot load symbol '" << fun << "': " << dlsym_error <<
+      '\n';
+    dlclose(handle);
+    return NULL;
+  }
+
+  std::vector<Type*> argsType;
+  //argsType.push_back(Type::getVoidTy(getGlobalContext()));
+  std::vector<Value*> ArgsV;
+  for (unsigned i = 0; i < args.size(); ++i) {
+    std::cout << "gen code for " << i << std::endl;
+    //    Value* v = codegen(*args[i], context, builder, module);
+    //    ArgsV.push_back(v);
+    argsType.push_back(Type::getInt8PtrTy(getGlobalContext()));
+  }
+  
+
+  FunctionType* signature = FunctionType::get(Type::getVoidTy(getGlobalContext()), argsType, false);
+  Function* func = Function::Create(signature, Function::ExternalLinkage, "fun", module);
+  llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
+  builder.SetInsertPoint(entry);
+
+
+  func->setCallingConv(CallingConv::C);
+  EE->addGlobalMapping(func, const_cast<void*>(handler));
+
+  std::stringstream ss;
+  ss << fun << "_call";
+  Function* callerF = createCaller(ss.str(), func, args, module, ArgsV);
+  typedef double (*ExecF)();
+  
+  ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
+  std::shared_ptr<Cell> res(RealAtom::New());
+  
+  res->real = execF();
+  
+    // close the library
+  dlclose(handle);
+
+  return NULL;
+}
 
 extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 {
@@ -348,6 +420,20 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
   EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
   if (!EE) 
     std::cout << ": Failed to construct ExecutionEngine: " << errStr << std::endl;
+
+  std::shared_ptr<Atom> native = SymbolAtom::New(env, "native");
+  native->closure = [module](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Cell> lib = sexp->cells[1];
+    std::shared_ptr<Cell> fun = sexp->cells[2];
+    
+    std::string libName = lib->eval(env)->val;
+    std::string funName = fun->eval(env)->val;
+    
+    std::vector<std::shared_ptr<Cell> > args(sexp->cells.begin()+3, sexp->cells.end());
+    externalCall(module, libName, funName, args, env);
+    
+    return RealAtom::New();
+  };
 
   
   std::shared_ptr<Atom> compile = SymbolAtom::New(env, "compile");
