@@ -338,14 +338,19 @@ llvm::Function* createCaller(const std::string& name, Function* compiledF, const
       ArgsV.push_back(codegen(*args[i], context, builder, module));
     }
   }
-  std::cout << "argv size " << ArgsV.size() << " " << ArgsV[0] << std::endl;
   builder.CreateRet(builder.CreateCall(compiledF, ArgsV, "calltmp"));
   return execF;
 }
 
 //typedef void* (*arbitrary)();
 
-void* externalCall(llvm::Module* module, const std::string& lib, const std::string& fun, std::vector<std::shared_ptr<Cell> >& args, Cell::CellEnv& env)
+union S
+{
+  void* ptr;
+  double value;
+};
+
+void* externalCall(llvm::Module* module, const std::string& lib, const std::string& proto, const std::string& fun, std::vector<std::shared_ptr<Cell> >& args, Cell::CellEnv& env)
 {
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
@@ -374,17 +379,17 @@ void* externalCall(llvm::Module* module, const std::string& lib, const std::stri
   }
 
   std::vector<Type*> argsType;
-  //argsType.push_back(Type::getVoidTy(getGlobalContext()));
-  std::vector<Value*> ArgsV;
   for (unsigned i = 0; i < args.size(); ++i) {
-    std::cout << "gen code for " << i << std::endl;
-    //    Value* v = codegen(*args[i], context, builder, module);
-    //    ArgsV.push_back(v);
-    argsType.push_back(Type::getInt8PtrTy(getGlobalContext()));
+    if(i+1 < proto.size())
+    {
+      if(Prototype::convert(proto[i+1]) == Cell::Type::Real)
+        argsType.push_back(Type::getDoubleTy(getGlobalContext()));
+      if(Prototype::convert(proto[i+1]) == Cell::Type::String)
+        argsType.push_back(Type::getInt8PtrTy(getGlobalContext()));
+    }
   }
   
-
-  FunctionType* signature = FunctionType::get(Type::getVoidTy(getGlobalContext()), argsType, false);
+  FunctionType* signature = FunctionType::get(Type::getDoubleTy(getGlobalContext()), argsType, false);
   Function* func = Function::Create(signature, Function::ExternalLinkage, "fun", module);
   llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
   builder.SetInsertPoint(entry);
@@ -395,15 +400,23 @@ void* externalCall(llvm::Module* module, const std::string& lib, const std::stri
 
   std::stringstream ss;
   ss << fun << "_call";
-  Function* callerF = createCaller(ss.str(), func, args, module, ArgsV);
+  Function* callerF = createCaller(ss.str(), func, args, module);
   typedef double (*ExecF)();
   
   ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
   std::shared_ptr<Cell> res(RealAtom::New());
   
-  res->real = execF();
-  
-    // close the library
+  module->dump();
+
+  S ret;
+  ret.value = execF();
+  if(Prototype::convert(proto[0]) == Cell::Type::Real)
+    res->real = ret.value;
+  if(Prototype::convert(proto[0]) == Cell::Type::String) {
+    std::cout << "got " << ret.ptr << std::endl;
+    res->val = std::string((char*)ret.ptr);
+    }
+  // close the library
   dlclose(handle);
 
   return NULL;
@@ -425,12 +438,14 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
   native->closure = [module](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> lib = sexp->cells[1];
     std::shared_ptr<Cell> fun = sexp->cells[2];
+    std::shared_ptr<Cell> proto = sexp->cells[3];
     
     std::string libName = lib->eval(env)->val;
     std::string funName = fun->eval(env)->val;
+    std::string protoTypes = proto->eval(env)->val;
     
-    std::vector<std::shared_ptr<Cell> > args(sexp->cells.begin()+3, sexp->cells.end());
-    externalCall(module, libName, funName, args, env);
+    std::vector<std::shared_ptr<Cell> > args(sexp->cells.begin()+4, sexp->cells.end());
+    externalCall(module, libName, protoTypes, funName, args, env);
     
     return RealAtom::New();
   };

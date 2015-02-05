@@ -45,7 +45,11 @@ Cell() :quoting(NoneQ), compiled(false) {};
 
 class Prototype
 {
- private:
+  //f -> Cell::Type::Real:
+  //s -> Cell::Type::String:
+  //a -> Cell::Type::Symbol:
+  //l -> Cell::Type::List:
+  //u -> Cell::Type::Unknown:
  public:
   std::string protoString;
   Prototype(const std::string& protoString);
