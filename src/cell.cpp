@@ -344,6 +344,9 @@ Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
 
 std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 {
+	if(this->cells.size() == 0)
+		return Cell::nil;
+
   std::shared_ptr<Cell> cl = this->cells[0];
   if(cl->closure)
     {
@@ -371,8 +374,9 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 	}
       return res;
   }
-
-  return std::shared_ptr<Cell>(StringAtom::New());    
+  std::shared_ptr<Cell> res(Sexp::New());
+  static_cast<Sexp*>(res.get())->cells = this->cells;
+  return res; 
 }
 
 Cell::Type Sexp::evalType(CellEnv& env)
