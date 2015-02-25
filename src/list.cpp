@@ -52,7 +52,7 @@ extern "C" void registerListHandlers(Cell::CellEnv& env)
 		if(sexp->cells.size() == 2)
     {
 			std::shared_ptr<Cell> content = sexp->cells[1]->eval(env);
-			if(content->evalType(env) == Cell::List)
+			if(content->evalType(env) == Cell::List && static_cast<Sexp*>(content.get())->cells.size() > 1)
       {
        Sexp * sres = new Sexp();
  			 sres->cells = std::vector<std::shared_ptr<Cell> >(static_cast<Sexp*>(content.get())->cells.begin()+1, static_cast<Sexp*>(content.get())->cells.end());
