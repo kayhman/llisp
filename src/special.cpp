@@ -163,8 +163,37 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
 
   std::shared_ptr<Atom> backquote = SymbolAtom::New(env, "backquote");
   backquote->closure = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::cout << "call backquote -> " << sexp->cells[1] << std::endl;
+    std::function<void(std::shared_ptr<Cell>& c)> recursiveReplace = [&](std::shared_ptr<Cell>& cellPtr)
+    {
+      Sexp* sxp = dynamic_cast<Sexp*>(cellPtr.get());
+      
+      if(sxp) {
+        if(sxp->cells.size())
+          {
+            if(sxp->cells[0]->val == "comma")
+              {
+                std::shared_ptr<Cell> newCell = sxp->eval(env);
+                cellPtr = newCell;
+              }
+            else {
+              for(auto cIt = sxp->cells.begin() ; cIt != sxp->cells.end() ; cIt++) {
+                if(dynamic_cast<Sexp*>(cIt->get()))
+                  recursiveReplace(*cIt);
+              } 
+            }
+          }
+      }
+    };
+
+    if(dynamic_cast<Sexp*> (sexp->cells[1].get()))
+      recursiveReplace(sexp->cells[1]);
+
     return sexp->cells[1];
+  };
+
+  std::shared_ptr<Atom> comma = SymbolAtom::New(env, "comma");
+  comma->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    return sexp->cells[1]->eval(env);
   };
 
   std::shared_ptr<Atom> progn = SymbolAtom::New(env, "progn");

@@ -31,6 +31,8 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		   sexp->quoting = Cell::Quote;
 		 if(quoting == Cell::BackQuote)
 		   sexp->quoting = Cell::BackQuote;
+		 if(quoting == Cell::Comma)
+		   sexp->quoting = Cell::Comma;
 		 quoting = Cell::NoneQ;
 	       }
 
@@ -54,9 +56,8 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		 if(quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx = Sexp::New();
-		     std::shared_ptr<Atom> quote = SymbolAtom::New(env, quoting == Cell::Quote ? "quote" : "backquote");
-		     //quote->computeType(quoting == Cell::Quote ? "quote" : "backquote");
-		     quote->computeVal(quoting == Cell::Quote ? "quote" : "backquote");
+		     std::shared_ptr<Atom> quote = SymbolAtom::New(env, quoting == Cell::Quote ? "quote" : (quoting == Cell::BackQuote ? "backquote" : "comma"));
+		     quote->computeVal(quoting == Cell::Quote ? "quote" : (quoting == Cell::BackQuote ? "backquote" : "comma"));
 		     
 		     sx->cells.push_back(quote);
 		     sx->cells.push_back(at);
@@ -75,9 +76,9 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		 if(sexp->quoting != Cell::NoneQ)
 		   {
 		     std::shared_ptr<Sexp> sx = Sexp::New();
-		     std::shared_ptr<Atom> quote =SymbolAtom::New(env, sexp->quoting == Cell::Quote ? "quote" : "backquote");
-		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : "backquote");
-		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : "backquote");
+		     std::shared_ptr<Atom> quote = SymbolAtom::New(env, sexp->quoting == Cell::Quote ? "quote" : (sexp->quoting == Cell::BackQuote ? "backquote" : "comma"));
+		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : (sexp->quoting == Cell::BackQuote ? "backquote" : "comma"));
+		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : (sexp->quoting == Cell::BackQuote ? "backquote" : "comma"));
 
 		     sx->cells = sexps.back()->cells;
 		     sexps.back()->cells.resize(0);
@@ -111,6 +112,8 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
                 quoting = Cell::Quote;
               else if(ch == '`')
                 quoting = Cell::BackQuote;
+              else if(ch == ',')
+                quoting = Cell::Comma;
               else if(ch == '"') {
                 buffer.push_back(ch);
                 stringing = !stringing;

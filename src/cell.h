@@ -19,7 +19,7 @@ struct Sexp;
 
 struct Cell
 {
-  enum Quoting {Quote, BackQuote, NoneQ};
+  enum Quoting {Quote, BackQuote, Comma, NoneQ};
   enum Type {Symbol, Real, String, List, Unknown};
   bool compiled;
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
