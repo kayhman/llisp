@@ -35,6 +35,8 @@ struct Cell
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
   virtual Type evalType(CellEnv& env) = 0;
   bool checkSyntax(CellEnv& env) const;
+  virtual std::shared_ptr<Cell> duplicate() = 0;
+
 
   static std::shared_ptr<Cell> nil;
   static std::shared_ptr<Cell> t;
@@ -70,6 +72,8 @@ struct Sexp : public Cell
   Type inferType(const std::string& symbolName) const;
   Type inferReturnType(CellEnv& env) const;
   Type inferFunctionType(CellEnv& env) const;
+  virtual std::shared_ptr<Cell> duplicate();
+
   friend std::ostream& operator<< (std::ostream& stream, const Sexp& cell);
   static std::shared_ptr<Sexp> New();
   static std::list<std::shared_ptr<Sexp> > gc;
@@ -99,6 +103,7 @@ struct RealAtom : public Atom
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const RealAtom& cell);
   static std::shared_ptr<RealAtom> New();
+  virtual std::shared_ptr<Cell> duplicate();
  protected:
   RealAtom() {};
 };
@@ -111,6 +116,7 @@ struct StringAtom : public Atom
   void computeVal(const std::string& code) const;
   friend std::ostream& operator<< (std::ostream& stream, const StringAtom& cell);
   static std::shared_ptr<StringAtom> New();
+  virtual std::shared_ptr<Cell> duplicate();
  protected:
   StringAtom() {};
 };
@@ -126,6 +132,7 @@ struct SymbolAtom : public Atom
   friend std::ostream& operator<< (std::ostream& stream, const SymbolAtom& cell);
   static std::shared_ptr<SymbolAtom> New(); 
   static std::shared_ptr<Atom> New(Cell::CellEnv& env, const std::string& name); 
+  virtual std::shared_ptr<Cell> duplicate();
  protected:
  SymbolAtom() {
    this->closureType = [this](Sexp* sexp, Cell::CellEnv& env) { return this->prototype.returnType(); };

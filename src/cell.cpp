@@ -203,11 +203,31 @@ std::shared_ptr<Sexp> Sexp::New()
   return sexp;
 }
 
+std::shared_ptr<Cell> Sexp::duplicate()
+{
+  std::shared_ptr<Cell> copy = Sexp::New();
+  Sexp* sxpCopy = static_cast<Sexp*>(copy.get());
+  *sxpCopy  = *this;
+  sxpCopy->cells.clear();
+  for(auto cIt = this->cells.begin() ; cIt != this->cells.end() ; cIt++) {
+    sxpCopy->cells.push_back((*cIt)->duplicate());
+  }
+  return copy;
+}
+
 std::shared_ptr<RealAtom> RealAtom::New()
 {
   std::shared_ptr<RealAtom> atom(new RealAtom);
   atom->evaluated = atom;
   return atom;
+}
+
+std::shared_ptr<Cell> RealAtom::duplicate()
+{
+  std::shared_ptr<Cell> copy = RealAtom::New();
+  RealAtom* real = static_cast<RealAtom*>(copy.get());
+  *real = *this;
+  return copy;
 }
 
 std::shared_ptr<StringAtom> StringAtom::New()
@@ -217,12 +237,32 @@ std::shared_ptr<StringAtom> StringAtom::New()
   return atom;
 }
 
+std::shared_ptr<Cell> StringAtom::duplicate()
+{
+  std::shared_ptr<Cell> copy = StringAtom::New();
+  StringAtom* string = static_cast<StringAtom*>(copy.get());
+  *string = *this;
+  return copy;
+}
+
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
   std::shared_ptr<SymbolAtom> atom(new SymbolAtom);
   atom->evaluated = atom;
   return atom;
 }
+
+std::shared_ptr<Cell> SymbolAtom::duplicate()
+{
+  std::shared_ptr<Cell> copy = SymbolAtom::New();
+  SymbolAtom* symbol = static_cast<SymbolAtom*>(copy.get());
+  *symbol = *this;
+  //symbol->code = this->code->duplicate();
+  //std::shared_ptr<Cell> acopy = this->args->duplicate();
+  //symbol->args = acopy;
+  return copy;
+}
+
 
 std::shared_ptr<Atom> SymbolAtom::New(Cell::CellEnv& env, const std::string& name)
 {
@@ -367,11 +407,7 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
     {
       std::shared_ptr<Cell> res = StringAtom::New();
       res->val = "printenv";
-      for(auto cIt = env.func.begin() ; cIt != env.func.end() ; cIt++)
-	{
-	  std::shared_ptr<Cell> cell = (cIt->second); 
-	  std::cout << cIt->first << " -> " << *cell << std::endl;
-	}
+      std::cout << env << std::endl;
       return res;
   }
   std::shared_ptr<Cell> res(Sexp::New());
