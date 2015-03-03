@@ -113,51 +113,53 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	  std::vector<std::shared_ptr<Cell> > cls(self->cells.begin()+1, self->cells.end());	  
 	  std::stringstream ss;
 	  
-	  std::function<std::shared_ptr<Cell>(std::shared_ptr<Cell>, std::regex re, std::string s)> recursiveReplace = [&](std::shared_ptr<Cell> cell, std::regex re, std::string s)
-	  {
-	    std::shared_ptr<Sexp> sexp = std::dynamic_pointer_cast<Sexp>(cell);
-	    std::shared_ptr<Atom> atom = std::dynamic_pointer_cast<Atom>(cell);
-	    
-	    if(sexp)
-	      {
-		if(sexp->cells.size() > 0)
-		  {
-		    std::shared_ptr<Sexp> newS = Sexp::New();
-		    std::for_each(sexp->cells.begin(), sexp->cells.end(), [&](std::shared_ptr<Cell> cell){ newS->cells.push_back(recursiveReplace(cell, re, s));});
-		    
-		    if(sexp->cells[0]->val.compare("backquote") == 0)
-		      return newS->cells[1]; //FIX : should call backquote symbol
-		    else
-		      return std::dynamic_pointer_cast<Cell>(newS);
-		  }
-	      } else if(atom)
-	      {
-		atom->val = regex_replace(atom->val, re, s);
-		return atom->eval(env);
-	      }
-	  };
-
-	  for(int c = 0 ; c < cls.size() ; c++)
+	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
+	  for(int c = 0 ; c < args->cells.size() ; c++)
 	    {
-	      ss.str("");
-	      std::string var;
-	      ss << *cls[c];
-	      
-	      
-	      var = ss.str();
-	      ss.str("");
-	      ss << "," << *args->cells[c];
-	      std::regex re(ss.str());
-	      body = recursiveReplace(body, re, var);
+	      std::shared_ptr<Cell> val = self->cells[c+1];//->eval(env);
+	      std::shared_ptr<SymbolAtom> symb = std::dynamic_pointer_cast<SymbolAtom>(val);
+	      if(symb && env.find(symb->val) != env.end())
+		newEnv[args->cells[c]->val] = env[symb->val];
+	      else
+		newEnv[args->cells[c]->val] = val; // Eval args before adding them to env (avoid infinite loop when defining recursive function)
 	    }
-	  Sexp* selfx = dynamic_cast<Sexp*>(self); //weak
-	  std::shared_ptr<Sexp> bodyx = std::dynamic_pointer_cast<Sexp>(body); //weak
-	  if(selfx && bodyx)
-	    selfx->cells = bodyx->cells;
+	  env.addEnvMap(&newEnv);
+          
+          
+          std::function<void(std::shared_ptr<Cell>& c)> recursiveReplace = [&](std::shared_ptr<Cell>& cellPtr)
+          {
+            Sexp* sxp = dynamic_cast<Sexp*>(cellPtr.get());
+            
+            if(sxp) {
+              if(sxp->cells.size())
+                {
+                  if(sxp->cells[0]->val == "backquote")
+                    {
+                      std::shared_ptr<Cell> newCell = sxp->eval(env);
+                      cellPtr = newCell;
+                    }
+                  else {
+                    for(auto cIt = sxp->cells.begin() ; cIt != sxp->cells.end() ; cIt++) {
+                      if(dynamic_cast<Sexp*>(cIt->get()))
+                        recursiveReplace(*cIt);
+                    } 
+                  }
+                }
+            }
+          };
 
-	  
-	  std::shared_ptr<Cell> res = body->eval(env);
-	  
+          
+          std::cout << "body (before) " << *body << std::endl;
+          if(Sexp* bsxp = dynamic_cast<Sexp*>(body.get()))
+            {
+              recursiveReplace(body);
+            }
+          std::cout << "body " << *body << std::endl;
+
+          std::shared_ptr<Cell> res = body->eval(env);          
+	  //The following lines are useless :
+	  env.removeEnv();
+          
 	  return res;
 	};
       }
