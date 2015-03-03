@@ -30,9 +30,8 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	      else
 		newEnv[args->cells[c]->val] = val; // Eval args before adding them to env (avoid infinite loop when defining recursive function)
 	    }
-	  env.addEnvMap(&newEnv);
+          env.addEnvMap(&newEnv);
 	  std::shared_ptr<Cell> res = body->eval(env);
-	  
 	  //The following lines are useless :
 	  env.removeEnv();
 	  if(&env != &callingEnv)
@@ -108,7 +107,13 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
     
     if(args && body)
       {
-	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& dummy) mutable {
+	fname->closure = [env, args, body, fname](Sexp* self, Cell::CellEnv& callingEnv) mutable {
+          if(&env != &callingEnv)
+	    for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; ++eIt)
+	      {
+		env.addEnvMap(*eIt);
+	      }
+
 	  //assert(cls.size() == args->cells.size());
 	  std::vector<std::shared_ptr<Cell> > cls(self->cells.begin()+1, self->cells.end());	  
 	  std::stringstream ss;
@@ -116,7 +121,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	  for(int c = 0 ; c < args->cells.size() ; c++)
 	    {
-	      std::shared_ptr<Cell> val = self->cells[c+1];//->eval(env);
+	      std::shared_ptr<Cell> val = self->cells[c+1];//don't eval as we are in a macro !
 	      std::shared_ptr<SymbolAtom> symb = std::dynamic_pointer_cast<SymbolAtom>(val);
 	      if(symb && env.find(symb->val) != env.end())
 		newEnv[args->cells[c]->val] = env[symb->val];
@@ -149,16 +154,17 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
           };
 
           
-          std::cout << "body (before) " << *body << std::endl;
-          if(Sexp* bsxp = dynamic_cast<Sexp*>(body.get()))
-            {
-              recursiveReplace(body);
-            }
-          std::cout << "body " << *body << std::endl;
+          
+          std::shared_ptr<Cell> copy = body->duplicate();
+          if(dynamic_cast<Sexp*>(copy.get())) {
+            recursiveReplace(copy);
+          }
 
-          std::shared_ptr<Cell> res = body->eval(env);          
+          std::shared_ptr<Cell> res = copy->eval(env);          
 	  //The following lines are useless :
-	  env.removeEnv();
+	  if(&env != &callingEnv)
+	    for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)
+              env.removeEnv();
           
 	  return res;
 	};
