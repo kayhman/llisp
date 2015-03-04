@@ -76,8 +76,6 @@ struct Sexp : public Cell
 
   friend std::ostream& operator<< (std::ostream& stream, const Sexp& cell);
   static std::shared_ptr<Sexp> New();
-  static std::list<std::shared_ptr<Sexp> > gc;
-  static std::list<std::shared_ptr<Sexp> > pool;
 };
 
 
