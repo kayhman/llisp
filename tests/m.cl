@@ -1,20 +1,26 @@
 (defmacro c (a) `(+ 1 2 ,(+ 3 4)))
-(c 12)
-
 (defmacro b (a) `(+ 1 2 ,(+ 3 4 ) ,a))
-(b 13)
-
 (defmacro double (a b) `(+ (+ ,a ,a) (+ ,b ,b)))
-
-(double 12 13)
-
 (defun mydouble (a b)
   (double a b))
-
-(mydouble 14 15)
 
 (defmacro complex (a b)
 	(let ((c 12))
 		`(+ 1 2 ,c ,(+ a b))))
 
-(complex 7 8)
+(when 
+    (and
+     (eq 10 (c 12))
+     (eq 23 (b 13))
+     (eq 50 (double 12 13))
+     (eq 58 (mydouble 14 15))
+     (eq 30 (complex 7 8)))
+  (print "macro succeed"))
+
+(exit)
+
+
+
+
+
+
