@@ -191,7 +191,9 @@ int main(int argc, char* argv[])
   if(argc >= 3) 
     if(std::string("-q").compare(argv[2]) == 0)
       verbose = false;
-    
+
+  loadFile("lib/core.cl", env, verbose);    
+
   if(argc >= 2)
     loadFile(argv[1], env, verbose);
 
