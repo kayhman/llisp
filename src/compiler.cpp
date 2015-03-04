@@ -342,7 +342,7 @@ llvm::Function* createCaller(const std::string& name, Function* compiledF, const
   return execF;
 }
 
-std::shared_ptr<Cell> externalCall(llvm::Module* module, const std::string& lib, const std::string& proto, const std::string& fun, std::vector<std::shared_ptr<Cell> >& args, Cell::CellEnv& env)
+std::shared_ptr<Cell> externalCall(llvm::Module* module, const std::string& lib, const Prototype& proto, const std::string& fun, std::vector<std::shared_ptr<Cell> >& args, Cell::CellEnv& env)
 {
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
@@ -372,11 +372,11 @@ std::shared_ptr<Cell> externalCall(llvm::Module* module, const std::string& lib,
 
   std::vector<Type*> argsType;
   for (unsigned i = 0; i < args.size(); ++i) {
-    if(i+1 < proto.size())
+    if(i+1 < proto.protoString.size())
     {
-      if(Prototype::convert(proto[i+1]) == Cell::Type::Real)
+      if(proto.argType(i+1) == Cell::Type::Real)
         argsType.push_back(Type::getDoubleTy(getGlobalContext()));
-      if(Prototype::convert(proto[i+1]) == Cell::Type::String)
+      if(proto.argType(i+1) == Cell::Type::String)
         argsType.push_back(Type::getInt8PtrTy(getGlobalContext()));
     }
   }
@@ -401,10 +401,10 @@ std::shared_ptr<Cell> externalCall(llvm::Module* module, const std::string& lib,
   //module->dump();
 
   std::shared_ptr<Cell> res;
-  if(Prototype::convert(proto[0]) == Cell::Type::Real) {
+  if(proto.returnType() == Cell::Type::Real) {
     res = RealAtom::New();
     res->real = doubleExecF();
-  } else if(Prototype::convert(proto[0]) == Cell::Type::String) {
+  } else if(proto.returnType() == Cell::Type::String) {
     res = StringAtom::New();
     res->val = std::string((char*)voidExecF());
   } else {
@@ -436,7 +436,7 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
     std::string protoTypes = proto->eval(env)->val;
     
     std::vector<std::shared_ptr<Cell> > args(sexp->cells.begin()+4, sexp->cells.end());
-    std::shared_ptr<Cell> res = externalCall(module, libName, protoTypes, funName, args, env);
+    std::shared_ptr<Cell> res = externalCall(module, libName, Prototype(protoTypes), funName, args, env);
       
     return res;
   };
