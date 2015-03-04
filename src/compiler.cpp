@@ -342,15 +342,7 @@ llvm::Function* createCaller(const std::string& name, Function* compiledF, const
   return execF;
 }
 
-//typedef void* (*arbitrary)();
-
-union S
-{
-  void* ptr;
-  double value;
-};
-
-void* externalCall(llvm::Module* module, const std::string& lib, const std::string& proto, const std::string& fun, std::vector<std::shared_ptr<Cell> >& args, Cell::CellEnv& env)
+std::shared_ptr<Cell> externalCall(llvm::Module* module, const std::string& lib, const std::string& proto, const std::string& fun, std::vector<std::shared_ptr<Cell> >& args, Cell::CellEnv& env)
 {
   llvm::LLVMContext& context = llvm::getGlobalContext();
   llvm::IRBuilder<> builder(context);
@@ -389,7 +381,7 @@ void* externalCall(llvm::Module* module, const std::string& lib, const std::stri
     }
   }
   
-  FunctionType* signature = FunctionType::get(Type::getDoubleTy(getGlobalContext()), argsType, false);
+  FunctionType* signature = FunctionType::get(PointerType::getUnqual(Type::getVoidTy(getGlobalContext())), argsType, false);
   Function* func = Function::Create(signature, Function::ExternalLinkage, "fun", module);
   llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
   builder.SetInsertPoint(entry);
@@ -401,25 +393,24 @@ void* externalCall(llvm::Module* module, const std::string& lib, const std::stri
   std::stringstream ss;
   ss << fun << "_call";
   Function* callerF = createCaller(ss.str(), func, args, module);
-  typedef double (*ExecF)();
+  typedef void* (*VoidExecF)();
+  typedef double (*DoubleExecF)();
   
-  ExecF execF = reinterpret_cast<ExecF>(EE->getPointerToFunction(callerF));
-  std::shared_ptr<Cell> res(RealAtom::New());
-  
-  module->dump();
+  VoidExecF voidExecF = reinterpret_cast<VoidExecF>(EE->getPointerToFunction(callerF));
+  DoubleExecF doubleExecF = reinterpret_cast<DoubleExecF>(EE->getPointerToFunction(callerF));
+  //module->dump();
 
-  S ret;
-  ret.value = execF();
-  if(Prototype::convert(proto[0]) == Cell::Type::Real)
-    res->real = ret.value;
-  if(Prototype::convert(proto[0]) == Cell::Type::String) {
-    std::cout << "got " << ret.ptr << std::endl;
-    res->val = std::string((char*)ret.ptr);
-    }
-  // close the library
-  dlclose(handle);
-
-  return NULL;
+  std::shared_ptr<Cell> res;
+  if(Prototype::convert(proto[0]) == Cell::Type::Real) {
+    res = RealAtom::New();
+    res->real = doubleExecF();
+  } else if(Prototype::convert(proto[0]) == Cell::Type::String) {
+    res = StringAtom::New();
+    res->val = std::string((char*)voidExecF());
+  } else {
+    res = RealAtom::New();
+  }
+  return res;
 }
 
 extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
@@ -445,9 +436,9 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
     std::string protoTypes = proto->eval(env)->val;
     
     std::vector<std::shared_ptr<Cell> > args(sexp->cells.begin()+4, sexp->cells.end());
-    externalCall(module, libName, protoTypes, funName, args, env);
-    
-    return RealAtom::New();
+    std::shared_ptr<Cell> res = externalCall(module, libName, protoTypes, funName, args, env);
+      
+    return res;
   };
 
   

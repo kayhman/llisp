@@ -1,5 +1,6 @@
 #include "cell.h"
 #include <dlfcn.h>
+#include <string.h>
 
 typedef void* (*arbitrary)();
 
@@ -61,7 +62,6 @@ extern "C" void testo(void)
 
 extern "C" double testadd(double a, double b)
 {
-  std::cout << "coucou " << a + b << std::endl;
   return a + b;
 }
 
@@ -73,15 +73,10 @@ extern "C" void testmult(double a, double b)
 
 extern "C" char* testconcat(const char* a, const char* b)
 {
-  std::cout << "coucou " << a << " and " <<  b << std::endl;
-  char* res = new char[12];
-  res[0] = 'l';
-  res[1] = 'a';
-  res[2] = 'p';
-  res[3] = 'i';
-  res[4] = 'n';
-  res[5] = '\0';
-  std::cout << "goodbye " << (void*)res << " " << a << " and " <<  b << std::endl;
+  std::stringstream ss;
+  ss << a << b;
+  char* res = new char[ss.str().size()];
+  strcpy(res, ss.str().c_str());
   return res;
 }
 
