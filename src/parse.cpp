@@ -2,7 +2,93 @@
 #include "cell.h"
 #include <istream>
 
-std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
+std::shared_ptr<Cell> parseCell(std::istream& is, Cell::CellEnv& env);
+
+std::shared_ptr<Cell> parseAtom(std::istream& is, Cell::CellEnv& env) {
+  std::string atom;
+  is >> atom;
+  Atom::Type type = Atom::computeType(atom);
+  std::shared_ptr<Cell> at;
+  if(type == Atom::Symbol)
+    at = SymbolAtom::New(env, atom);
+  if(type == Atom::String)
+    at = StringAtom::New();
+  if(type == Atom::Real)
+    at = RealAtom::New();
+
+  std::dynamic_pointer_cast<Atom>(at)->computeVal(atom);
+  return at; 
+}
+
+std::shared_ptr<Cell> parseSexp(std::istream& is, Cell::CellEnv& env) {
+  char ch;
+  std::shared_ptr<Sexp> sx = Sexp::New();
+  while(is >> ch) {
+    if (ch == ')') {
+      return sx;
+    } else {
+      is.putback(ch);
+      std::shared_ptr<Cell> cell = parseCell(is, env);
+      sx->cells.push_back(cell);
+    }
+  }
+}
+
+
+std::shared_ptr<Cell> parseCell(std::istream& is, Cell::CellEnv& env) {
+  char ch;
+  is >> ch;
+
+  std::shared_ptr<Sexp> quote;
+  std::shared_ptr<Cell> cell;
+
+  if (ch == '\'' || ch == '`' || ch == ',') {
+    quote = Sexp::New();
+    std::string atomName = ch == '\'' ? "quote" : (ch == '`' ? "backquote" : "comma"); 
+    std::shared_ptr<Atom> atom = SymbolAtom::New(env, atomName);
+    atom->computeType(atomName);
+    atom->computeVal(atomName);
+    quote->cells.push_back(atom);
+    is >> ch;
+  }
+  
+  if (ch == '(') {
+    cell = parseSexp(is, env);
+  } else {
+    is.putback(ch);
+    cell = parseAtom(is, env);
+  }
+  
+  if (quote) {
+    quote->cells.push_back(cell);
+    cell = quote;
+  }
+    
+
+  return cell;
+}
+
+std::shared_ptr<Cell> parse(std::istream& is, Cell::CellEnv& env) {
+  std::stringstream ss;
+  char ch;
+  
+  //format stream to ease parsing
+  while(is >> std::noskipws >> ch) {
+    if(ch == '(' || ch == '\'')
+      ss << ch << " " ;
+    else if(ch == ')')
+      ss << " " << ch;
+    else
+      ss << ch;
+  }
+
+  std::shared_ptr<Cell> cell;
+  cell = parseCell(ss, env);
+
+  return cell;
+}
+
+std::shared_ptr<Cell> parse2(std::istream& ss, Cell::CellEnv& env)
 {
      bool newToken = false;
 
@@ -12,7 +98,6 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
      int count = 0;
      char ch;
      std::string buffer;
-     Cell::Quoting quoting = Cell::NoneQ;
      bool stringing = false;
      for(int cc = 0 ;  ; ++cc)
      {
@@ -22,18 +107,11 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
                if(ch == '(')
                {
 		 count++;
-                 std::shared_ptr<Sexp> sx= Sexp::New();
+                 std::shared_ptr<Sexp> sx = Sexp::New();
                  if(sexps.size())
                    sexp->cells.push_back(sx);
                  sexp = sx;
                  sexps.push_back(sx);
-		 if(quoting == Cell::Quote)
-		   sexp->quoting = Cell::Quote;
-		 if(quoting == Cell::BackQuote)
-		   sexp->quoting = Cell::BackQuote;
-		 if(quoting == Cell::Comma)
-		   sexp->quoting = Cell::Comma;
-		 quoting = Cell::NoneQ;
 	       }
 
                newToken = true;
@@ -52,20 +130,8 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 		 at->computeVal(buffer);
 		 if(!sexps.size())
 		   return at;
-	
-		 if(quoting != Cell::NoneQ)
-		   {
-		     std::shared_ptr<Sexp> sx = Sexp::New();
-		     std::shared_ptr<Atom> quote = SymbolAtom::New(env, quoting == Cell::Quote ? "quote" : (quoting == Cell::BackQuote ? "backquote" : "comma"));
-		     quote->computeVal(quoting == Cell::Quote ? "quote" : (quoting == Cell::BackQuote ? "backquote" : "comma"));
-		     
-		     sx->cells.push_back(quote);
-		     sx->cells.push_back(at);
-		     sexp->cells.push_back(sx);
-		     quoting = Cell::NoneQ;
-		   }
-		 else
-		   sexp->cells.push_back(at);
+   
+		 sexp->cells.push_back(at);
 		 
 		 buffer.resize(0);
                }
@@ -73,20 +139,6 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
                if(ch == ')')
                {
 		 count--;
-		 if(sexp->quoting != Cell::NoneQ)
-		   {
-		     std::shared_ptr<Sexp> sx = Sexp::New();
-		     std::shared_ptr<Atom> quote = SymbolAtom::New(env, sexp->quoting == Cell::Quote ? "quote" : (sexp->quoting == Cell::BackQuote ? "backquote" : "comma"));
-		     quote->computeType(sexp->quoting == Cell::Quote ? "quote" : (sexp->quoting == Cell::BackQuote ? "backquote" : "comma"));
-		     quote->computeVal(sexp->quoting == Cell::Quote ? "quote" : (sexp->quoting == Cell::BackQuote ? "backquote" : "comma"));
-
-		     sx->cells = sexps.back()->cells;
-		     sexps.back()->cells.resize(0);
-		     sexps.back()->cells.push_back(quote);
-		     sexps.back()->cells.push_back(sx);
-		   }
-
-
                     if(sexps.size() > 1)
                     {
                          sexps.pop_back();
@@ -98,7 +150,6 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
                          sexps.pop_back();
                     }
                }
-	       quoting = Cell::NoneQ;
           }
           else if((isalnum(ch) || isoperator(ch)) && newToken)
           {
@@ -108,12 +159,25 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
           if(isalnum(ch) || isoperator(ch) || isquote(ch) || ch == '.'
              || (ch == ' ' && stringing))
             {
-              if(ch == '\'')
-                quoting = Cell::Quote;
-              else if(ch == '`')
-                quoting = Cell::BackQuote;
-              else if(ch == ',')
-                quoting = Cell::Comma;
+              if(ch == '\'' || ch == '`' || ch == ',')
+		{
+		  std::shared_ptr<Sexp> sx = Sexp::New();
+		  if(sexps.size())
+		    {
+		      sexp->cells.push_back(sx);
+		    }
+		  sexp = sx;
+		  sexps.push_back(sx);
+
+		  std::string atomName = ch == '\'' ? "quote" : (ch == '`' ? "backquote" : "comma"); 
+		  std::shared_ptr<Atom> quote = SymbolAtom::New(env, atomName);
+		  quote->computeType(atomName);
+		  quote->computeVal(atomName);
+		     
+		  sexp->cells.push_back(quote);
+		  if(ch == '\'' || ch == '`')
+		    count++;
+		}
               else if(ch == '"') {
                 buffer.push_back(ch);
                 stringing = !stringing;
@@ -137,6 +201,7 @@ std::shared_ptr<Cell> parse(std::istream& ss, Cell::CellEnv& env)
 
 bool evalHelper(std::istream& ss, Cell::CellEnv& env, bool verbose = true)
 {
+  
   std::shared_ptr<Cell> sexp = parse(ss, env);
   if(sexp)
     {
@@ -166,27 +231,31 @@ void loadFile(const std::string& file, Cell::CellEnv& env, bool verbose = true)
     if(!evalHelper(in, env, verbose))
       break;
 }
+
 int main(int argc, char* argv[])
 { 
   Cell::CellEnv env; 
   std::string in;
   std::string curLine;
-
-  std::stringstream special("(load \"./special.so\" \"registerSpecialHandlers\")");
+  
+  
+  std::stringstream special("( load \"./special.so\" \"registerSpecialHandlers\" )");
   evalHelper(special, env, false);
-  std::stringstream core("(load \"./core.so\" \"registerCoreHandlers\")");
+ 
+  std::stringstream core("( load \"./core.so\" \"registerCoreHandlers\" )");
   evalHelper(core, env, false);
-  std::stringstream func("(load \"./functional.so\" \"registerFunctionalHandlers\")");
+  
+  std::stringstream func("( load \"./functional.so\" \"registerFunctionalHandlers\" )");
   evalHelper(func, env, false);
-  std::stringstream str("(load \"./string.so\" \"registerStringHandlers\")");
+  std::stringstream str("( load \"./string.so\" \"registerStringHandlers\" )");
   evalHelper(str, env, false);
-  std::stringstream list("(load \"./list.so\" \"registerListHandlers\")");
+  std::stringstream list("( load \"./list.so\" \"registerListHandlers\" )");
   evalHelper(list, env, false);
-  std::stringstream bench("(load \"./bench.so\" \"registerBenchHandlers\")");
+  std::stringstream bench("( load \"./bench.so\" \"registerBenchHandlers\" )");
   evalHelper(bench, env, false);
-  std::stringstream comp("(load \"./compiler.so\" \"registerCompilerHandlers\")");
+  std::stringstream comp("( load \"./compiler.so\" \"registerCompilerHandlers\" )");
   evalHelper(comp, env, false);
-
+  
   bool verbose = true;
   if(argc >= 3) 
     if(std::string("-q").compare(argv[2]) == 0)
@@ -196,7 +265,7 @@ int main(int argc, char* argv[])
 
   if(argc >= 2)
     loadFile(argv[1], env, verbose);
-
+ 
 
   while(true)
     {
@@ -213,10 +282,12 @@ int main(int argc, char* argv[])
           std::cout << "skip comment" << std::endl;
 					continue;
         }
- 
+
       curLine += " " +  in;
+      
       std::stringstream cl(curLine);
-      if(evalHelper(cl, env, verbose))
+
+      if(evalHelper(cl, env, true))
         curLine = "";
     }
   
