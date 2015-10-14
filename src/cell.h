@@ -19,18 +19,18 @@ struct Sexp;
 
 struct Cell
 {
-  enum Quoting {Quote, BackQuote, Comma, NoneQ};
+  //enum Quoting {Quote, BackQuote, Comma, NoneQ};
   enum Type {Symbol, Real, String, List, Unknown};
   bool compiled;
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
-  Cell() :quoting(NoneQ), compiled(false), real(1.0) {};
+  Cell() : compiled(false), real(1.0) {};
   mutable std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)> closure;
   mutable std::function<Type (Sexp*, Cell::CellEnv&)> closureType;
   mutable std::string val;
   mutable double real;
 
-  Quoting quoting;
+  //  Quoting quoting;
   std::weak_ptr<Cell> evaluated;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
   virtual Type evalType(CellEnv& env) = 0;
