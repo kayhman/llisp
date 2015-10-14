@@ -161,7 +161,7 @@ void RealAtom::computeVal(const std::string& code) const
 
 void StringAtom::computeVal(const std::string& code) const
 {
-  this->val = code.substr(1, code.size()-2);
+  this->val = code;
 }
 
 void SymbolAtom::computeVal(const std::string& code) const
