@@ -1,8 +1,7 @@
-#include "environment.h"
-#include "cell.h"
+#include "parse.h"
+//#include "environment.h"
+//#include "cell.h"
 #include <istream>
-
-std::shared_ptr<Cell> parseCell(std::istream& is, Cell::CellEnv& env);
 
 std::shared_ptr<Cell> parseString(std::istream& is, Cell::CellEnv& env) {
   char ch;
@@ -73,7 +72,7 @@ std::shared_ptr<Cell> parseCell(std::istream& is, Cell::CellEnv& env) {
     quote = Sexp::New();
     std::string atomName = ch == '\'' ? "quote" : (ch == '`' ? "backquote" : "comma"); 
     std::shared_ptr<Atom> atom = SymbolAtom::New(env, atomName);
-    atom->computeType(atomName);
+
     atom->computeVal(atomName);
     quote->cells.push_back(atom);
     is >> ch;
@@ -107,46 +106,46 @@ std::vector<std::shared_ptr<Cell> > parse(std::istream& is, Cell::CellEnv& env) 
     }
     else
       ss << ch;
-    }
+  }
       
-      std::vector<std::shared_ptr<Cell> > cells;
-      while(ss.good()) {
-      std::shared_ptr<Cell> cell = parseCell(ss, env);
-      cells.push_back(cell);
-    }
+  std::vector<std::shared_ptr<Cell> > cells;
+  while(ss.good()) {
+    std::shared_ptr<Cell> cell = parseCell(ss, env);
+    cells.push_back(cell);
+  }
   return cells;
 }
 
-bool evalHelper(std::istream& ss, Cell::CellEnv& env, bool verbose = true)
+bool evalHelper(std::istream& ss, Cell::CellEnv& env, bool verbose)
 {
   
   std::vector<std::shared_ptr<Cell> > sexps = parse(ss, env);
   for(auto cIt = sexps.begin() ; cIt != sexps.end() ; cIt++) {
-      std::shared_ptr<Cell> sexp = *cIt;
-      if(sexp)
-	{
-      if(sexp->checkSyntax(env))
-        {
-      std::shared_ptr<Sexp> fun = std::dynamic_pointer_cast<Sexp>(sexp);
-      if(fun)
-	fun->inferFunctionType(env);
-      std::shared_ptr<Cell> res = sexp->eval(env);
-      if(verbose) {
-      //std::cout << "> " << *sexp << std::endl;
-      std::cout << "-> " << *res << std::endl;
-    }
-    }
-      else
-        std::cout << "Syntax Error" << std::endl;
-      //return true;
-    }
-  else
-    return false;
-    }
+    std::shared_ptr<Cell> sexp = *cIt;
+    if(sexp)
+      {
+	if(sexp->checkSyntax(env))
+	  {
+	    std::shared_ptr<Sexp> fun = std::dynamic_pointer_cast<Sexp>(sexp);
+	    if(fun)
+	      fun->inferFunctionType(env);
+	    std::shared_ptr<Cell> res = sexp->eval(env);
+	    if(verbose) {
+	      //std::cout << "> " << *sexp << std::endl;
+	      std::cout << "-> " << *res << std::endl;
+	    }
+	  }
+	else
+	  std::cout << "Syntax Error" << std::endl;
+	//return true;
+      }
+    else
+      return false;
+  }
   return true;
 }
 
-void loadFile(const std::string& file, Cell::CellEnv& env, bool verbose = true)
+void loadFile(const std::string& file, Cell::CellEnv& env, bool verbose)
 {
   std::ifstream in(file);
   while(!in.eof())
