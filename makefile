@@ -6,7 +6,7 @@ LLVM_LIB=`llvm-config-3.5 --libs`
 LLVM_LINK=`llvm-config-3.5 --ldflags`
 TESTS=$(wildcard tests/*.cl)
 
-all: libenvironment.so libcell.so string.so list.so special.so core.so native.so functional.so bench.so compiler.so llisp
+all: libenvironment.so libcell.so string.so list.so special.so core.so native.so functional.so bench.so compiler.so debug.so llisp
 
 test: $(TESTS)
 
@@ -45,8 +45,11 @@ functional.so: src/functional.cpp
 bench.so: src/bench.cpp
 	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
 
+debug.so: src/debug.cpp
+	$(CPP) $(CFLAGS) --shared -fPIC -o $@ $?
+
 compiler.so: src/compiler.cpp
 	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl -lffi -L. -lenvironment
 
-llisp: src/parse.cpp src/compiler.cpp libenvironment.so libcell.so
-	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ src/parse.cpp $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl
+llisp: src/parse.cpp src/llisp.cpp
+	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl -lreadline

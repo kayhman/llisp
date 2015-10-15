@@ -17,6 +17,7 @@ Prototype::Prototype() :
 
 std::shared_ptr<Cell> Cell::t;
 std::shared_ptr<Cell> Cell::nil;
+std::vector<std::function<void (Cell*, Cell::CellEnv&)> > Cell::hooks;
 
 const Cell::Type Prototype::convert(const char c)
 {
@@ -384,8 +385,11 @@ Cell::Type Sexp::inferFunctionType(Cell::CellEnv& env) const
 
 std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
 {
-	if(this->cells.size() == 0)
-		return Cell::nil;
+  if(this->cells.size() == 0)
+    return Cell::nil;
+  
+  for(auto hIt = Cell::hooks.begin() ; hIt != Cell::hooks.end() ; hIt++)
+    (*hIt)(this, env);
 
   std::shared_ptr<Cell> cl = this->cells[0];
   if(cl->closure)
