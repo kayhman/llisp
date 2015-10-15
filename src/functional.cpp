@@ -1,5 +1,5 @@
 #include "cell.h"
-
+#include <sstream>
 
 extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 {

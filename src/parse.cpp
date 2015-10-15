@@ -1,5 +1,6 @@
 #include "parse.h"
 #include <istream>
+#include <sstream>
 
 std::shared_ptr<Cell> parseString(std::istream& is, Cell::CellEnv& env) {
   char ch;
@@ -122,20 +123,14 @@ bool evalHelper(std::istream& ss, Cell::CellEnv& env, bool verbose)
     std::shared_ptr<Cell> sexp = *cIt;
     if(sexp)
       {
-	if(sexp->checkSyntax(env))
-	  {
-	    std::shared_ptr<Sexp> fun = std::dynamic_pointer_cast<Sexp>(sexp);
-	    if(fun)
-	      fun->inferFunctionType(env);
-	    std::shared_ptr<Cell> res = sexp->eval(env);
-	    if(verbose) {
-	      //std::cout << "> " << *sexp << std::endl;
-	      std::cout << "-> " << *res << std::endl;
-	    }
-	  }
-	else
-	  std::cout << "Syntax Error" << std::endl;
-	//return true;
+	std::shared_ptr<Sexp> fun = std::dynamic_pointer_cast<Sexp>(sexp);
+	if(fun)
+	  fun->inferFunctionType(env);
+	std::shared_ptr<Cell> res = sexp->eval(env);
+	if(verbose) {
+	  //std::cout << "> " << *sexp << std::endl;
+	  std::cout << "-> " << *res << std::endl;
+	}
       }
     else
       return false;

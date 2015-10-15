@@ -1,6 +1,7 @@
 #include "parse.h"
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <sstream>
 
 int main(int argc, char* argv[])
 { 
@@ -31,7 +32,7 @@ int main(int argc, char* argv[])
     if(std::string("-q").compare(argv[2]) == 0)
       verbose = false;
 
-  loadFile("lib/core.cl", env, verbose);    
+  //loadFile("lib/core.cl", env, verbose);    
 
   if(argc >= 2)
     loadFile(argv[1], env, verbose);

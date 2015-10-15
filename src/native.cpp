@@ -1,6 +1,7 @@
 #include "cell.h"
 #include <dlfcn.h>
 #include <string.h>
+#include <sstream>
 
 typedef void* (*arbitrary)();
 

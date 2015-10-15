@@ -1,5 +1,6 @@
 #include "cell.h"
 #include <dlfcn.h>
+#include <sstream>
 
 
 
@@ -134,11 +135,6 @@ std::ostream& operator<< (std::ostream& stream, const SymbolAtom& atom)
 {
   stream << atom.val;
   return stream;
-}
-
-bool Cell::checkSyntax(CellEnv& env) const
-{
-  return true;//TODO : check syntax ! this->computeType(env) != Cell::Type::Unknown;
 }
 
 Atom::Type Atom::computeType(const std::string& code)

@@ -1,16 +1,10 @@
 #pragma once
 #include <iostream>
-#include <list>
 #include <vector>
-#include <locale>
-#include <numeric>
 #include <algorithm>
-#include <sstream>
-#include <map>
 #include <functional>
 #include <fstream>
 #include <memory>
-#include <regex>
 #include "environment.h"
 
 bool isoperator(char c);
@@ -32,7 +26,6 @@ struct Cell
   std::weak_ptr<Cell> evaluated;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
   virtual Type evalType(CellEnv& env) = 0;
-  bool checkSyntax(CellEnv& env) const;
   virtual std::shared_ptr<Cell> duplicate() = 0;
 
 
