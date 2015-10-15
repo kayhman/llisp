@@ -52,4 +52,4 @@ compiler.so: src/compiler.cpp
 	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) --shared -fPIC -o $@ $? $(LLVM_LIB) -pthread -ldl -lffi -L. -lenvironment
 
 llisp: src/parse.cpp src/llisp.cpp
-	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl -lreadline
+	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -L. -pthread -ldl -lreadline
