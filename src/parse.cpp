@@ -1,6 +1,4 @@
 #include "parse.h"
-//#include "environment.h"
-//#include "cell.h"
 #include <istream>
 
 std::shared_ptr<Cell> parseString(std::istream& is, Cell::CellEnv& env) {
