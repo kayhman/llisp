@@ -17,7 +17,7 @@ struct Cell
   bool compiled;
   typedef Env<std::string, std::shared_ptr<Cell> > CellEnv;
   virtual ~Cell() {};
-  Cell() : compiled(false), real(1.0) {};
+  Cell() : compiled(false), real(NAN) {};
   mutable std::function<std::shared_ptr<Cell> (Sexp*, Cell::CellEnv&)> closure;
   mutable std::function<Type (Sexp*, Cell::CellEnv&)> closureType;
   mutable std::string val;
