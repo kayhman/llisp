@@ -78,11 +78,12 @@ struct Atom : public Cell
   virtual void computeVal(const std::string& code) const = 0;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
   virtual Type evalType(CellEnv& env) = 0;
-  Atom(const std::string& val) {this->val = val;};
- 
+  
   friend std::ostream& operator<< (std::ostream& stream, const Atom& cell);
  protected:
  Atom() {};
+ Atom(const std::string& val) {this->val = val;};
+ 
 };
 
 
