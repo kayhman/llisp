@@ -270,4 +270,12 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
     else
       return Cell::nil;
   };
+
+  std::shared_ptr<Atom> printenv = SymbolAtom::New(env, "printenv");
+  printenv->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Cell> res = StringAtom::New();
+    res->val = "printenv";
+    std::cout << env << std::endl;
+    return res;
+  };
 }

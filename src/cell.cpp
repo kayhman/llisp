@@ -388,11 +388,13 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
     (*hIt)(this, env);
 
   std::shared_ptr<Cell> cl = this->cells[0];
+  //we don't look into env to find closure associated to function symbol in order to be more efficient. (no lookup)
   if(cl->closure)
     {
       return cl->closure(this, env);
     }
-
+  
+  // this code cannot be placed in a module, as it is used to load module !
   if(cl->val.compare("load") == 0)   
     {
       loadHandlers(this->cells[1]->eval(env)->val,
@@ -403,13 +405,6 @@ std::shared_ptr<Cell> Sexp::eval(CellEnv& env)
       return res;
     }
 
-  if(cl->val.compare("printenv") == 0)   
-    {
-      std::shared_ptr<Cell> res = StringAtom::New();
-      res->val = "printenv";
-      std::cout << env << std::endl;
-      return res;
-  }
   std::shared_ptr<Cell> res(Sexp::New());
   static_cast<Sexp*>(res.get())->cells = this->cells;
   return res; 
