@@ -247,19 +247,19 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
   let->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Sexp> vars = std::dynamic_pointer_cast<Sexp>(sexp->cells[1]);
     
-    std::map<std::string, std::shared_ptr<Cell> >* newEnv = new std::map<std::string, std::shared_ptr<Cell> >();
+    std::map<std::string, std::shared_ptr<Cell> > newEnv;
     for(int vId = 0 ; vId < vars->cells.size() ; vId++) {
       std::shared_ptr<Sexp> binding = std::dynamic_pointer_cast<Sexp>(vars->cells[vId]);
       std::shared_ptr<Atom> label = std::dynamic_pointer_cast<Atom>(binding->cells[0]);
       std::shared_ptr<Cell> value = std::dynamic_pointer_cast<Cell>(binding->cells[1]);
       
-      (*newEnv)[label->val].reset();
+      newEnv[label->val].reset();
       
       const std::shared_ptr<Cell> res = value->eval(env);
-      (*newEnv)[label->val] = res;
+      newEnv[label->val] = res;
     }
     
-    env.addEnvMap(newEnv);
+    env.addEnvMap(&newEnv);
     std::shared_ptr<Cell> res;
     for(auto bodyIt = sexp->cells.begin() + 2 ; bodyIt != sexp->cells.end() ; bodyIt++) {
       res = (*bodyIt)->eval(env);
