@@ -11,8 +11,6 @@ class Env
 {
 public:
   static std::map<Key,Val> func;
-  static std::map<Key, std::function<Val(Sexp* sexp, Env& env)> > evalHandlers;
-  //private:
   std::vector<std::map<Key,Val>* > envs;
 
   static std::map<Key,Val> top;
