@@ -41,14 +41,16 @@ Val& Env<Key, Val>::operator[] (const Key& k)
 template <typename Key, typename Val>
 Val& Env<Key, Val>::operator[] (Key& k)
 {
+  
   for(auto envIt = envs.rbegin() ; envIt != envs.rend() ; envIt++)
     {
       auto it = (*envIt)->find(k);
       if(it != (*envIt)->end())
-      return it->second;
+	return it->second;
     }
    return (*envs.back())[k];
 }
+
 
 template <typename Key, typename Val>
  typename std::map<Key,Val>::iterator Env<Key, Val>::find (const Key& k)
@@ -63,7 +65,7 @@ template <typename Key, typename Val>
 }
 
 template <typename Key, typename Val>
-typename std::map<Key,Val>::iterator Env<Key, Val>::end() const
+typename std::map<Key,Val>::const_iterator Env<Key, Val>::end() const
 {
     return this->top.end();
 }
@@ -88,7 +90,7 @@ std::ostream& operator<< (std::ostream& stream, const Env<Key, Val>& env)
     return stream;
   }
 
-template<typename K, typename V> std::map<K, V> Env<K,V>::top;
+//template<typename K, typename V> std::map<K, V> Env<K,V>::top;
 template<typename K, typename V> std::map<K, V> Env<K,V>::func;
 
 template std::ostream& operator<< (std::ostream& stream, const Env<std::string, std::shared_ptr<Cell> >& env);
