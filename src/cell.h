@@ -23,7 +23,7 @@ struct Cell
   mutable std::string val;
   mutable double real;
 
-  std::weak_ptr<Cell> evaluated;
+  std::weak_ptr<Cell> weakRef;
   virtual std::shared_ptr<Cell> eval(CellEnv& env) = 0;
   virtual Type evalType(CellEnv& env) = 0;
   virtual std::shared_ptr<Cell> duplicate() = 0;

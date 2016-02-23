@@ -169,12 +169,12 @@ void SymbolAtom::computeVal(const std::string& code) const
 
 std::shared_ptr<Cell> RealAtom::eval(CellEnv& env)
 {
-  return evaluated.lock();
+  return weakRef.lock();
 }
 
 std::shared_ptr<Cell> StringAtom::eval(CellEnv& env)
 {
-  return evaluated.lock();
+  return weakRef.lock();
 }
 
 std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
@@ -184,7 +184,7 @@ std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
     return it->second->eval(env);
   else
     {
-      return evaluated.lock();
+      return weakRef.lock();
     }
 }
 
@@ -196,7 +196,7 @@ Cell::Type SymbolAtom::evalType(CellEnv& env)
 std::shared_ptr<Sexp> Sexp::New()
 {
   std::shared_ptr<Sexp> sexp(new Sexp);
-  sexp->evaluated = sexp;
+  sexp->weakRef = sexp;
   return sexp;
 }
 
@@ -215,7 +215,7 @@ std::shared_ptr<Cell> Sexp::duplicate()
 std::shared_ptr<RealAtom> RealAtom::New()
 {
   std::shared_ptr<RealAtom> atom(new RealAtom);
-  atom->evaluated = atom;
+  atom->weakRef = atom;
   return atom;
 }
 
@@ -230,7 +230,7 @@ std::shared_ptr<Cell> RealAtom::duplicate()
 std::shared_ptr<StringAtom> StringAtom::New()
 {
   std::shared_ptr<StringAtom> atom(new StringAtom);
-  atom->evaluated = atom;
+  atom->weakRef = atom;
   return atom;
 }
 
@@ -245,7 +245,7 @@ std::shared_ptr<Cell> StringAtom::duplicate()
 std::shared_ptr<SymbolAtom> SymbolAtom::New()
 {
   std::shared_ptr<SymbolAtom> atom(new SymbolAtom);
-  atom->evaluated = atom;
+  atom->weakRef = atom;
   return atom;
 }
 
@@ -272,7 +272,7 @@ std::shared_ptr<Atom> SymbolAtom::New(Cell::CellEnv& env, const std::string& nam
     {
       std::shared_ptr<SymbolAtom> atom(new SymbolAtom);
       env.func[name] = atom;
-      atom->evaluated = atom;
+      atom->weakRef = atom;
       return atom;
     }
 }
