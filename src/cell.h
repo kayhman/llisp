@@ -68,6 +68,8 @@ struct Sexp : public Cell
 
   friend std::ostream& operator<< (std::ostream& stream, const Sexp& cell);
   static std::shared_ptr<Sexp> New();
+ protected:
+  Sexp() {};
 };
 
 
@@ -95,6 +97,8 @@ struct RealAtom : public Atom
   friend std::ostream& operator<< (std::ostream& stream, const RealAtom& cell);
   static std::shared_ptr<RealAtom> New();
   virtual std::shared_ptr<Cell> duplicate();
+  virtual ~RealAtom() {};  
+ 
  protected:
   RealAtom() {};
 };
@@ -108,6 +112,8 @@ struct StringAtom : public Atom
   friend std::ostream& operator<< (std::ostream& stream, const StringAtom& cell);
   static std::shared_ptr<StringAtom> New();
   virtual std::shared_ptr<Cell> duplicate();
+  virtual ~StringAtom() {}
+
  protected:
   StringAtom() {};
 };
@@ -124,6 +130,8 @@ struct SymbolAtom : public Atom
   static std::shared_ptr<SymbolAtom> New(); 
   static std::shared_ptr<Atom> New(Cell::CellEnv& env, const std::string& name); 
   virtual std::shared_ptr<Cell> duplicate();
+  virtual ~SymbolAtom() {};  
+  
  protected:
  SymbolAtom() {
    this->closureType = [this](Sexp* sexp, Cell::CellEnv& env) { return this->prototype.returnType(); };
