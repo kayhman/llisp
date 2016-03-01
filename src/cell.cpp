@@ -287,15 +287,14 @@ int loadHandlers(const std::string& lib, const std::string& handlerName, Cell::C
     }
     
     // load the symbol
-    typedef void (*hello_t)(Cell::CellEnv& env);
+    typedef void (*loader_t)(Cell::CellEnv& env);
 
     // reset errors
     dlerror();
-    hello_t handler = (hello_t) dlsym(handle, handlerName.c_str());
+    loader_t handler = (loader_t) dlsym(handle, handlerName.c_str());
     const char *dlsym_error = dlerror();
     if (dlsym_error) {
-      std::cout << "Cannot load symbol 'hello': " << dlsym_error <<
-            '\n';
+      std::cout << "Cannot load symbol : " << dlsym_error << std::endl;
         dlclose(handle);
         return 1;
     }
