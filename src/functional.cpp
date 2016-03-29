@@ -5,9 +5,9 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 {
   std::shared_ptr<Atom> defun = SymbolAtom::New(env, "defun"); //handle recursion
   defun->closure = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Atom> fname = SymbolAtom::New(env, sexp->cells[1]->val);//std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
-    std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak
-    std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(sexp->cells[3]); //weak
+    std::shared_ptr<Atom> fname = SymbolAtom::New(env, sexp->cells[1]->val);
+    std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]);
+    std::shared_ptr<Sexp> body = std::dynamic_pointer_cast<Sexp>(sexp->cells[3]);
     std::dynamic_pointer_cast<SymbolAtom>(fname)->code = body;
     std::dynamic_pointer_cast<SymbolAtom>(fname)->args = args;
     if(args && body)
@@ -101,8 +101,8 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 
   std::shared_ptr<Atom> defmacro = SymbolAtom::New(env, "defmacro");
   defmacro->closure = [](Sexp* sexp, Cell::CellEnv& env) {
-    std::shared_ptr<Atom> fname = SymbolAtom::New(env, sexp->cells[1]->val);//std::dynamic_pointer_cast<Atom>(sexp->cells[1]); //weak
-    std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]); //weak
+    std::shared_ptr<Atom> fname = SymbolAtom::New(env, sexp->cells[1]->val);
+    std::shared_ptr<Sexp> args = std::dynamic_pointer_cast<Sexp>(sexp->cells[2]);
     std::shared_ptr<Cell> body = sexp->cells[3];
     
     if(args && body)
@@ -130,7 +130,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	    }
 	  env.addEnvMap(&newEnv);
           
-          
+          // We perform the macro expansion
           std::function<void(std::shared_ptr<Cell>& c)> recursiveReplace = [&](std::shared_ptr<Cell>& cellPtr)
           {
             Sexp* sxp = dynamic_cast<Sexp*>(cellPtr.get());
