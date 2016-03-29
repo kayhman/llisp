@@ -271,6 +271,34 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
       return Cell::nil;
   };
 
+  std::shared_ptr<Atom> letStart = SymbolAtom::New(env, "let*");
+  letStart->closure = [](Sexp* sexp, Cell::CellEnv& env) {
+    std::shared_ptr<Sexp> vars = std::dynamic_pointer_cast<Sexp>(sexp->cells[1]);
+    
+    std::map<std::string, std::shared_ptr<Cell> > newEnv;
+    env.addEnvMap(&newEnv);
+    for(int vId = 0 ; vId < vars->cells.size() ; vId++) {
+      std::shared_ptr<Sexp> binding = std::dynamic_pointer_cast<Sexp>(vars->cells[vId]);
+      std::shared_ptr<Atom> label = std::dynamic_pointer_cast<Atom>(binding->cells[0]);
+      std::shared_ptr<Cell> value = std::dynamic_pointer_cast<Cell>(binding->cells[1]);
+      
+      newEnv[label->val].reset();
+      
+      const std::shared_ptr<Cell> res = value->eval(env);
+      newEnv[label->val] = res;
+    }
+    
+    std::shared_ptr<Cell> res;
+    for(auto bodyIt = sexp->cells.begin() + 2 ; bodyIt != sexp->cells.end() ; bodyIt++) {
+      res = (*bodyIt)->eval(env);
+    }
+    env.removeEnv();
+    if (res)
+      return res;
+    else
+      return Cell::nil;
+  };
+
   std::shared_ptr<Atom> printenv = SymbolAtom::New(env, "printenv");
   printenv->closure = [](Sexp* sexp, Cell::CellEnv& env) {
     std::shared_ptr<Cell> res = StringAtom::New();
