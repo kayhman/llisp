@@ -155,7 +155,7 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 
           
           
-          std::shared_ptr<Cell> copy = body->duplicate();
+          std::shared_ptr<Cell> copy = body; //->duplicate();
           if(dynamic_cast<Sexp*>(copy.get())) {
             recursiveReplace(copy);
           }
