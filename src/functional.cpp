@@ -121,46 +121,15 @@ extern "C" void registerFunctionalHandlers(Cell::CellEnv& env)
 	  std::map<std::string, std::shared_ptr<Cell> > newEnv;
 	  for(int c = 0 ; c < args->cells.size() ; c++)
 	    {
-	      std::shared_ptr<Cell> val = self->cells[c+1];//don't eval as we are in a macro !
-	      std::shared_ptr<SymbolAtom> symb = std::dynamic_pointer_cast<SymbolAtom>(val);
-	      if(symb && env.find(symb->val) != env.end())
-		newEnv[args->cells[c]->val] = env[symb->val];
-	      else
-		newEnv[args->cells[c]->val] = val; // Eval args before adding them to env (avoid infinite loop when defining recursive function)
+	      newEnv[args->cells[c]->val] = self->cells[c+1]; //don't eval as we are in a macro !
 	    }
 	  env.addEnvMap(&newEnv);
           
-          // We perform the macro expansion
-          std::function<void(std::shared_ptr<Cell>& c)> recursiveReplace = [&](std::shared_ptr<Cell>& cellPtr)
-          {
-            Sexp* sxp = dynamic_cast<Sexp*>(cellPtr.get());
-            
-            if(sxp) {
-              if(sxp->cells.size())
-                {
-                  if(sxp->cells[0]->val == "backquote")
-                    {
-                      std::shared_ptr<Cell> newCell = sxp->eval(env);
-                      cellPtr = newCell;
-                    }
-                  else {
-                    for(auto cIt = sxp->cells.begin() ; cIt != sxp->cells.end() ; cIt++) {
-                      if(dynamic_cast<Sexp*>(cIt->get()))
-                        recursiveReplace(*cIt);
-                    } 
-                  }
-                }
-            }
-          };
-
-          
-          
-          std::shared_ptr<Cell> copy = body; //->duplicate();
-          if(dynamic_cast<Sexp*>(copy.get())) {
-            recursiveReplace(copy);
-          }
-
-          std::shared_ptr<Cell> res = copy->eval(env);          
+          std::shared_ptr<Cell> copy = body->duplicate();
+          std::shared_ptr<Cell> expansion = copy->eval(env); //perform macro expansion
+	  *self = *dynamic_cast<Sexp*>(expansion.get());
+	  //replace macro code by expansion
+	  std::shared_ptr<Cell> res = expansion->duplicate()->eval(env); //eval code
 	  //The following lines are useless :
 	  if(&env != &callingEnv)
 	    for(auto eIt = callingEnv.envs.begin() ; eIt != callingEnv.envs.end() ; eIt++)

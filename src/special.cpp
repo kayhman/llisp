@@ -193,7 +193,14 @@ extern "C" void registerSpecialHandlers(Cell::CellEnv& env)
 
   std::shared_ptr<Atom> comma = SymbolAtom::New(env, "comma");
   comma->closure = [](Sexp* sexp, Cell::CellEnv& env) {
-    return sexp->cells[1]->eval(env);
+    Sexp* sxp = dynamic_cast<Sexp*>(sexp->cells[1].get());
+
+    if(sxp) {
+      return sexp->cells[1]; //->eval(env);
+    } else {
+      return env[sexp->cells[1]->val];
+    }
+      
   };
 
   std::shared_ptr<Atom> progn = SymbolAtom::New(env, "progn");

@@ -180,7 +180,7 @@ std::shared_ptr<Cell> StringAtom::eval(CellEnv& env)
 std::shared_ptr<Cell> SymbolAtom::eval(CellEnv& env)
 {
   auto it = env.find(this->val);
-  if(it != env.end())// && it->second.get() != this)
+  if(it != env.end() && it->second.get() != this) // do not enter infinite loop 
     return it->second->eval(env);
   else
     {
