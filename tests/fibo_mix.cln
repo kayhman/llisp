@@ -9,8 +9,8 @@
 			 (fibo (- N 2)))))
 
 
-(time (fibo 15))
+(time (fibo 30))
 (compile "test")
 (compile "fibo")
-(time (fibo 40))
+(time (fibo 30))
 

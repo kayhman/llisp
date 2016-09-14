@@ -14,7 +14,8 @@
      (eq 23 (b 13))
      (eq 50 (double 12 13))
      (eq 58 (mydouble 14 15))
-     (eq 30 (complex 7 8)))
+     (eq 30 (complex 7 8))
+	)
   (print "macro succeed"))
 
 (exit)
