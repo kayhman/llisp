@@ -461,12 +461,10 @@ extern "C" void registerCompilerHandlers(Cell::CellEnv& env)
 	  std::cout << "verifying... ";
 	  if (verifyModule(*module)) {
 	    std::cout << ": Error constructing function!\n";
-
-	  }         
+	  }
 	  
 	  Function* f = EE->FindFunctionNamed(fname.c_str());
 
-	  typedef int (*fibType)(int, int);
 	  //replace evaluated closure by compiled code
 	  fun->closure = [fname, bodyF, module, protoArgs](Sexp* self, Cell::CellEnv& dummy) mutable {
 	    std::vector<std::shared_ptr<Cell> > args;
