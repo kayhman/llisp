@@ -9,7 +9,6 @@
 #include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
-#include "cell.h"
 #include <vector>
 #include <string>
 #include <iostream>
@@ -33,7 +32,7 @@ static Function *CreateFibFunction(Module *M, LLVMContext &Context) {
 
   // Get pointer to the integer argument of the add1 function...
   Argument *ArgX = FibF->arg_begin();   // Get the arg.
-  ArgX->setName("AnArg");            // Give it a nice symbolic name for fun.
+  ArgX->setName("N");            // Give it a nice symbolic name for fun.
 
   // Create the true_block.
   BasicBlock *RetBB = BasicBlock::Create(Context, "return", FibF);
@@ -75,41 +74,9 @@ int main()
 
   llvm::LLVMContext & context = llvm::getGlobalContext();
   llvm::Module *module = new llvm::Module("elisp", context);
-  llvm::IRBuilder<> builder(context);
 
-  llvm::FunctionType *funcType = llvm::FunctionType::get(builder.getVoidTy(), false);
   llvm::Function *FibF = CreateFibFunction(module, context);
 
-
-  llvm::Function *mainFunc = 
-    llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, "main", module);
-  llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entrypoint", mainFunc);
-  builder.SetInsertPoint(entry);
-  
-  llvm::Value *helloWorld = builder.CreateGlobalStringPtr("hello world!\n");
-
-  std::vector<llvm::Type *> putsArgs;
-  putsArgs.push_back(builder.getInt8Ty()->getPointerTo());
-  llvm::ArrayRef<llvm::Type*>  argsRef(putsArgs);
-
-  llvm::FunctionType *putsType = 
-    llvm::FunctionType::get(builder.getInt32Ty(), argsRef, false);
-  llvm::Constant *putsFunc = module->getOrInsertFunction("puts", putsType);
-  
-  llvm::Constant *FibConst = module->getOrInsertFunction("fib", Type::getInt32Ty(context),
-                                          Type::getInt32Ty(context),
-                                          (Type *)0);
-  
-  Value *fArg = ConstantInt::get(Type::getInt32Ty(context), 1);
-  
-  builder.CreateCall(putsFunc, helloWorld);
-  builder.CreateCall(FibConst, fArg);
-  builder.CreateRetVoid();
-  //module->dump();
-
-
-
- // Now we going to create JIT
   std::string errStr;
   ExecutionEngine *EE = EngineBuilder(module).setErrorStr(&errStr).setEngineKind(EngineKind::JIT).create();
 
@@ -119,18 +86,12 @@ int main()
     return 1;
   }
 
-  std::cout << "verifying... ";
   if (verifyModule(*module)) {
     std::cout << ": Error constructing function!\n";
     return 1;
   }
 
-
-  Function* f = EE->FindFunctionNamed("fib");
-  std::cout << "big " << f << std::endl;
-  
-  //    typedef std::function<int(int)> fibType;
   typedef int (*fibType)(int);
-  fibType ffib = reinterpret_cast<fibType>(EE->getPointerToFunction(f));
-    std::cout << "fib " << ffib(7) << std::endl;
+  fibType ffib = reinterpret_cast<fibType>(EE->getPointerToFunction(FibF));
+  std::cout << "fib " << ffib(25) << std::endl;
 }

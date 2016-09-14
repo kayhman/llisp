@@ -53,3 +53,7 @@ compiler.so: src/compiler.cpp
 
 llisp: src/parse.cpp src/llisp.cpp
 	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl -lreadline
+
+hw: llvm/hw.cpp
+	$(CPP) $(CFLAGS) $(LLVM_CFLAGS) $(LLVM_LINK) -o $@ $? $(LLVM_LIB) -L. -lenvironment -lcell -pthread -ldl -lreadline -lffi -ltinfo
+
