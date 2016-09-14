@@ -1,6 +1,6 @@
 clear
-g++ `llvm-config --cxxflags` -o hw.o -c hw.cpp
-g++ `llvm-config --ldflags` -o hw hw.o `llvm-config --libs` -pthread -ldl
+g++ `llvm-config-3.5 --cxxflags` -o hw.o -c hw.cpp
+g++ `llvm-config-3.5 --ldflags` -o hw hw.o `llvm-config --libs` -pthread -ldl
 
 
 #clear
